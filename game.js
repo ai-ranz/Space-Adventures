@@ -422,6 +422,17 @@ const BOSSES = {
     cosmicDragon: { name: 'Cosmic Dragon',  emoji: '🐉✨', hp: 280, attack: 30, location: 'theVoidEdge',   reward: 8000, desc: 'The ultimate space dragon! FINAL BOSS!' },
 };
 
+const MEGA_BOSS = {
+    name: 'The Soul Devourer',
+    emoji: '💀👑',
+    phaseEmojis: ['💀👑', '👹🔥', '☠️💜'],
+    phaseNames: ['Soul Awakening', 'Burning Rage', 'Final Desperation'],
+    hp: 500,
+    attack: 30,
+    reward: 25000,
+    desc: 'An abomination born from the combined souls of every defeated boss!',
+};
+
 // ─── DIFFICULTY ─────────────────────────────────────────────
 
 const DIFFICULTY = {
@@ -486,6 +497,7 @@ const ACHIEVEMENTS = {
     combatPro:      { name: 'Battle Hero!',         emoji: '🦸', desc: 'Win 10 battles!', check: g => (g.combatStats ? g.combatStats.wins : 0) >= 10 },
     bossSlayer:     { name: 'Boss Slayer!',         emoji: '👑', desc: 'Defeat a boss!', check: g => (g.bossesDefeated || []).length >= 1 },
     dragonSlayer:   { name: 'Dragon Slayer!!',      emoji: '🐉', desc: 'Defeat ALL bosses!', check: g => (g.bossesDefeated || []).length >= Object.keys(BOSSES).length },
+    galaxySavior:   { name: 'Galaxy Savior!!!',     emoji: '🌌', desc: 'Defeat the Soul Devourer and save the galaxy!', check: g => !!g.megaBossDefeated },
 };
 
 // ─── BUDDY TIPS ────────────────────────────────────────────
@@ -848,6 +860,7 @@ function newGameState() {
         foundRare: false,
         foundLegendary: false,
         bossesDefeated: [],
+        megaBossDefeated: false,
         combatStats: { wins: 0, losses: 0, fled: 0 },
         galaxy: null,
     };
@@ -1373,7 +1386,43 @@ function combatAttack() {
 }
 
 function enemyTurn() {
-    const enemy = combatState.enemy;
+    const cs = combatState;
+    const enemy = cs.enemy;
+
+    // Mega boss phase management
+    if (cs.isMegaBoss) {
+        const hpPct = cs.enemyHp / cs.enemyMaxHp;
+        const newPhase = hpPct > 0.66 ? 1 : hpPct > 0.33 ? 2 : 3;
+        if (newPhase > cs.phase) {
+            cs.phase = newPhase;
+            cs.enemy.emoji = MEGA_BOSS.phaseEmojis[newPhase - 1];
+            if (newPhase === 2) {
+                cs.log.push('');
+                cs.log.push('🔥🔥🔥 SOUL DEVOURER ENTERS RAGE MODE! 🔥🔥🔥');
+                RetroAudio.sfx('boss-appear');
+            } else if (newPhase === 3) {
+                cs.log.push('');
+                cs.log.push('💀💀💀 FINAL FORM UNLEASHED! 💀💀💀');
+                if (!cs.healUsed) {
+                    cs.healUsed = true;
+                    const heal = Math.round(cs.enemyMaxHp * 0.15);
+                    cs.enemyHp = Math.min(cs.enemyMaxHp, cs.enemyHp + heal);
+                    cs.log.push('💚 Absorbs defeated souls... +' + heal + ' HP!');
+                }
+                RetroAudio.sfx('boss-appear');
+            }
+            renderCombat();
+            setTimeout(() => {
+                if (!combatState || combatState.turnPhase !== 'enemy') return;
+                megaBossDoAttack();
+            }, 900);
+            return;
+        }
+        megaBossDoAttack();
+        return;
+    }
+
+    // Normal enemy attack
     const baseDmg = enemy.attack;
     const damage = baseDmg + Math.floor(Math.random() * baseDmg * 0.4);
     combatState.playerShield = Math.max(0, combatState.playerShield - damage);
@@ -1385,6 +1434,48 @@ function enemyTurn() {
     if (combatState.playerShield <= 0) { combatLose(); return; }
 
     combatState.turnPhase = 'player';
+    renderCombat();
+}
+
+function megaBossDoAttack() {
+    const cs = combatState;
+    const enemy = cs.enemy;
+
+    // Phase-scaled damage
+    const phaseMult = cs.phase === 3 ? 1.7 : cs.phase === 2 ? 1.35 : 1.0;
+    const baseDmg = Math.round(cs.baseAttack * phaseMult);
+    const damage = baseDmg + Math.floor(Math.random() * baseDmg * 0.4);
+    cs.playerShield = Math.max(0, cs.playerShield - damage);
+
+    const p3attacks = ['SOUL CRUSH!', 'VOID ANNIHILATE!', 'DARK NOVA!', 'OBLIVION STRIKE!'];
+    const p2attacks = ['RAGE STRIKE!', 'FURY BLAST!', 'SOUL FIRE!', 'CHAOS BOLT!'];
+    const p1attacks = ['SHADOW SWIPE!', 'SOUL DRAIN!', 'DARK PULSE!', 'VOID TOUCH!'];
+    const attacks = cs.phase === 3 ? p3attacks : cs.phase === 2 ? p2attacks : p1attacks;
+
+    cs.log.push(enemy.emoji + ' ' + attacks[Math.floor(Math.random() * attacks.length)] + ' ' + damage + ' damage!');
+    RetroAudio.sfx('player-hit');
+
+    // Double strike chance in phases 2 and 3
+    if (cs.phase >= 2 && cs.playerShield > 0) {
+        const doubleChance = cs.phase === 3 ? 0.40 : 0.25;
+        if (Math.random() < doubleChance) {
+            const bonusDmg = Math.round(baseDmg * 0.6) + Math.floor(Math.random() * baseDmg * 0.3);
+            cs.playerShield = Math.max(0, cs.playerShield - bonusDmg);
+            cs.log.push('⚡ DOUBLE STRIKE! +' + bonusDmg + ' damage!');
+            RetroAudio.sfx('player-hit');
+        }
+    }
+
+    // Phase 3: chance to drain shields and heal
+    if (cs.phase === 3 && cs.playerShield > 0 && Math.random() < 0.2) {
+        const drainAmt = Math.round(damage * 0.3);
+        cs.enemyHp = Math.min(cs.enemyMaxHp, cs.enemyHp + drainAmt);
+        cs.log.push('💜 Soul Drain! Heals ' + drainAmt + ' HP!');
+    }
+
+    if (cs.playerShield <= 0) { combatLose(); return; }
+
+    cs.turnPhase = 'player';
     renderCombat();
 }
 
@@ -1400,7 +1491,12 @@ function combatWin() {
 
     combatState.log.push('🎉 YOU WON! +' + formatCR(creditReward) + '!');
 
-    if (combatState.isBoss && combatState.bossId) {
+    if (combatState.isMegaBoss) {
+        game.megaBossDefeated = true;
+        combatState.log.push('');
+        combatState.log.push('🌌🌌🌌 THE SOUL DEVOURER IS DESTROYED!!! 🌌🌌🌌');
+        combatState.log.push('✨ The galaxy is finally at peace! ✨');
+    } else if (combatState.isBoss && combatState.bossId) {
         if (!game.bossesDefeated) game.bossesDefeated = [];
         if (!game.bossesDefeated.includes(combatState.bossId)) {
             game.bossesDefeated.push(combatState.bossId);
@@ -1447,6 +1543,12 @@ function combatLose() {
 function combatFlee() {
     if (!combatState || combatState.turnPhase !== 'player') return;
 
+    if (combatState.isMegaBoss) {
+        combatState.log.push('💀 There is no escape from the Soul Devourer!');
+        renderCombat();
+        return;
+    }
+
     const fleeChance = Math.max(0.05, 0.35 + game.upgrades.engines * 0.10 + getDifficulty().fleeBonus);
 
     if (Math.random() < fleeChance) {
@@ -1469,7 +1571,19 @@ function combatFlee() {
 }
 
 function endCombat() {
+    const wasMegaBoss = combatState && combatState.isMegaBoss;
+    const megaBossWon = wasMegaBoss && combatState.enemyHp <= 0;
+
     document.getElementById('combat-overlay').classList.remove('active');
+
+    // Mega boss victory → show ending
+    if (megaBossWon) {
+        combatState = null;
+        pendingTravel = null;
+        setTimeout(() => showVictoryEnding(), 800);
+        return;
+    }
+
     const dest = pendingTravel;
     pendingTravel = null;
 
@@ -1478,6 +1592,17 @@ function endCombat() {
     } else {
         updateAll();
     }
+
+    // Check if all regular bosses now defeated → trigger mega boss cutscene
+    const allBossesDefeated = game.bossesDefeated &&
+        Object.keys(BOSSES).every(id => game.bossesDefeated.includes(id));
+
+    if (allBossesDefeated && !game.megaBossDefeated && !wasMegaBoss) {
+        combatState = null;
+        setTimeout(() => showMegaBossCutscene(), 1000);
+        return;
+    }
+
     combatState = null;
 }
 
@@ -1486,6 +1611,244 @@ function challengeBoss(bossId) {
     if (!boss) return;
     const diff = getDifficulty();
     startCombat({ ...boss, hp: Math.round(boss.hp * diff.bossHpMult), attack: Math.round(boss.attack * diff.bossAtkMult), loot: null }, true, bossId);
+}
+
+// ─── MEGA BOSS CUTSCENE & FIGHT ────────────────────────────
+
+function showMegaBossCutscene() {
+    const overlay = document.getElementById('megaboss-cutscene');
+    const flash = document.getElementById('cutscene-flash');
+    RetroAudio.stopMusic();
+
+    const bossList = Object.values(BOSSES);
+    const soulPositions = [
+        { x: 20, y: 25 }, { x: 75, y: 20 },
+        { x: 15, y: 65 }, { x: 80, y: 70 },
+        { x: 50, y: 15 },
+    ];
+
+    // Build cutscene HTML
+    let soulsHtml = '';
+    bossList.forEach((boss, i) => {
+        const pos = soulPositions[i];
+        soulsHtml += '<div class="cutscene-soul" id="soul-' + i + '" style="left:' + pos.x + '%;top:' + pos.y + '%">' + boss.emoji + '</div>';
+    });
+
+    overlay.innerHTML =
+        '<div class="cutscene-stars-bg" id="cutscene-stars-bg"></div>' +
+        '<div class="cutscene-text" id="cutscene-text-1">Something stirs in the void...</div>' +
+        '<div class="cutscene-text cutscene-text-sub" id="cutscene-text-2"></div>' +
+        soulsHtml +
+        '<div class="cutscene-megaboss-emoji" id="cutscene-mega-emoji">' + MEGA_BOSS.emoji + '</div>' +
+        '<div class="cutscene-text cutscene-text-title" id="cutscene-text-3">' + MEGA_BOSS.name + '</div>' +
+        '<div class="cutscene-text cutscene-text-sub" id="cutscene-text-4"></div>';
+
+    // Generate background particles
+    const starsBg = document.getElementById('cutscene-stars-bg');
+    for (let i = 0; i < 60; i++) {
+        const star = document.createElement('div');
+        star.className = 'cutscene-star-particle';
+        star.style.left = (Math.random() * 100) + '%';
+        star.style.top = (Math.random() * 100) + '%';
+        star.style.animationDelay = (Math.random() * 3) + 's';
+        star.style.animationDuration = (2 + Math.random() * 3) + 's';
+        starsBg.appendChild(star);
+    }
+
+    overlay.classList.add('active');
+
+    // Cutscene sequence
+    const t1 = document.getElementById('cutscene-text-1');
+    const t2 = document.getElementById('cutscene-text-2');
+    const t3 = document.getElementById('cutscene-text-3');
+    const t4 = document.getElementById('cutscene-text-4');
+
+    // Step 1: Opening text
+    setTimeout(() => { t1.classList.add('visible'); }, 500);
+
+    // Step 2: Text changes
+    setTimeout(() => {
+        t1.classList.remove('visible');
+    }, 3000);
+
+    setTimeout(() => {
+        t1.textContent = 'The defeated bosses\' souls cry out...';
+        t1.classList.add('visible');
+    }, 3800);
+
+    // Step 3: Boss souls appear one by one
+    let soulDelay = 5200;
+    bossList.forEach((boss, i) => {
+        setTimeout(() => {
+            const soul = document.getElementById('soul-' + i);
+            soul.classList.add('visible');
+            soul.style.animation = 'soulFloat 2s ease-in-out infinite, soulPulse 1.5s ease-in-out infinite';
+            soul.style.animationDelay = (i * 0.2) + 's';
+            RetroAudio.sfx('boss-appear');
+        }, soulDelay + i * 800);
+    });
+
+    // Step 4: Text about merging
+    const mergeTextTime = soulDelay + bossList.length * 800 + 800;
+    setTimeout(() => {
+        t1.classList.remove('visible');
+        t2.textContent = 'Their souls are merging into something terrible...';
+        t2.classList.add('visible');
+    }, mergeTextTime);
+
+    // Step 5: Souls swirl to center
+    const swirlTime = mergeTextTime + 2000;
+    setTimeout(() => {
+        bossList.forEach((boss, i) => {
+            const soul = document.getElementById('soul-' + i);
+            soul.classList.add('merging');
+        });
+    }, swirlTime);
+
+    // Step 6: Flash and mega boss appears
+    const flashTime = swirlTime + 1400;
+    setTimeout(() => {
+        flash.classList.add('active');
+        t2.classList.remove('visible');
+        RetroAudio.sfx('legendary');
+    }, flashTime);
+
+    setTimeout(() => {
+        flash.classList.remove('active');
+        const megaEmoji = document.getElementById('cutscene-mega-emoji');
+        megaEmoji.classList.add('visible');
+    }, flashTime + 200);
+
+    // Step 7: Mega boss title
+    setTimeout(() => {
+        t3.classList.add('visible');
+    }, flashTime + 800);
+
+    setTimeout(() => {
+        t4.textContent = '⚔️ Prepare for the ultimate battle! ⚔️';
+        t4.classList.add('visible');
+    }, flashTime + 1800);
+
+    // Step 8: Transition to fight
+    setTimeout(() => {
+        overlay.classList.remove('active');
+        setTimeout(() => {
+            overlay.innerHTML = '';
+            startMegaBossFight();
+        }, 600);
+    }, flashTime + 3800);
+}
+
+function startMegaBossFight() {
+    const diff = getDifficulty();
+    const maxShield = getMaxShield();
+    const scaledHp = Math.round(MEGA_BOSS.hp * diff.bossHpMult);
+    const scaledAtk = Math.round(MEGA_BOSS.attack * diff.bossAtkMult);
+
+    combatState = {
+        enemy: {
+            name: MEGA_BOSS.name,
+            emoji: MEGA_BOSS.phaseEmojis[0],
+            hp: scaledHp,
+            attack: scaledAtk,
+            reward: MEGA_BOSS.reward,
+            loot: null,
+        },
+        enemyHp: scaledHp,
+        enemyMaxHp: scaledHp,
+        playerShield: maxShield,
+        maxShield: maxShield,
+        isBoss: true,
+        isMegaBoss: true,
+        bossId: null,
+        turnPhase: 'player',
+        log: [],
+        phase: 1,
+        healUsed: false,
+        baseAttack: scaledAtk,
+    };
+
+    combatState.log.push('💀👑 ' + MEGA_BOSS.name + ' has awakened!');
+    combatState.log.push('⚡ Phase 1: ' + MEGA_BOSS.phaseNames[0]);
+    combatState.log.push('💀 There is no escape...');
+
+    RetroAudio.sfx('boss-appear');
+    RetroAudio.startMusic();
+    renderCombat();
+    document.getElementById('combat-overlay').classList.add('active');
+}
+
+function challengeMegaBoss() {
+    showMegaBossCutscene();
+}
+
+function showVictoryEnding() {
+    const overlay = document.getElementById('victory-overlay');
+    RetroAudio.stopMusic();
+
+    const diff = getDifficulty();
+    const cs = game.combatStats || { wins: 0, losses: 0, fled: 0 };
+    const galaxyName = game.galaxy ? game.galaxy.name : 'Classic Galaxy';
+
+    overlay.innerHTML =
+        '<div class="victory-stars" id="victory-stars"></div>' +
+        '<div class="victory-content">' +
+            '<div class="victory-emoji-parade">' +
+                '<span class="victory-emoji v-e-1">🚀</span>' +
+                '<span class="victory-emoji v-e-2">⭐</span>' +
+                '<span class="victory-emoji v-e-3">🌌</span>' +
+                '<span class="victory-emoji v-e-4">⭐</span>' +
+                '<span class="victory-emoji v-e-5">🏆</span>' +
+            '</div>' +
+            '<div class="victory-title" id="victory-title">YOU SAVED THE GALAXY!</div>' +
+            '<div class="victory-subtitle">The Soul Devourer has been destroyed!</div>' +
+            '<div class="victory-story">' +
+                'With the Soul Devourer vanquished, peace returns to the ' + galaxyName + '.<br>' +
+                'The stars shine brighter, and every planet celebrates your name.<br>' +
+                'You are the greatest space captain who ever lived!' +
+            '</div>' +
+            '<div class="victory-stats">' +
+                '<div class="victory-stat"><span class="vs-label">Difficulty</span><span class="vs-value" style="color:' + diff.color + '">' + diff.emoji + ' ' + diff.name + '</span></div>' +
+                '<div class="victory-stat"><span class="vs-label">Battles Won</span><span class="vs-value">' + cs.wins + '</span></div>' +
+                '<div class="victory-stat"><span class="vs-label">Bosses Slain</span><span class="vs-value">' + ((game.bossesDefeated || []).length + 1) + '</span></div>' +
+                '<div class="victory-stat"><span class="vs-label">Resources Mined</span><span class="vs-value">' + game.stats.totalMined + '</span></div>' +
+                '<div class="victory-stat"><span class="vs-label">Coins Earned</span><span class="vs-value">' + formatCR(game.stats.creditsEarned) + '</span></div>' +
+                '<div class="victory-stat"><span class="vs-label">Trips Made</span><span class="vs-value">' + game.stats.tripsCount + '</span></div>' +
+            '</div>' +
+            '<div class="victory-credits">' +
+                '<div class="vc-title">🌟 SPACE ADVENTURES 🌟</div>' +
+                '<div class="vc-line">Captain: YOU!</div>' +
+                '<div class="vc-line">Galaxy: ' + galaxyName + '</div>' +
+                '<div class="vc-line">Thanks for playing! 🎉</div>' +
+            '</div>' +
+            '<button class="btn btn-primary btn-large victory-btn" onclick="closeVictory()">🚀 Continue Exploring!</button>' +
+        '</div>';
+
+    // Stars background
+    const starsContainer = document.getElementById('victory-stars');
+    for (let i = 0; i < 80; i++) {
+        const star = document.createElement('div');
+        star.className = 'victory-star';
+        star.style.left = (Math.random() * 100) + '%';
+        star.style.top = (Math.random() * 100) + '%';
+        star.style.animationDelay = (Math.random() * 3) + 's';
+        star.style.animationDuration = (1 + Math.random() * 2) + 's';
+        starsContainer.appendChild(star);
+    }
+
+    overlay.classList.add('active');
+    spawnConfetti();
+
+    // Sequenced animations
+    setTimeout(() => RetroAudio.sfx('achievement'), 500);
+    setTimeout(() => RetroAudio.sfx('legendary'), 1500);
+    setTimeout(() => spawnConfetti(), 2000);
+    setTimeout(() => RetroAudio.startMusic(), 3000);
+}
+
+function closeVictory() {
+    document.getElementById('victory-overlay').classList.remove('active');
+    updateAll();
 }
 
 function renderCombat() {
@@ -1501,17 +1864,27 @@ function renderCombat() {
     const lost = isDone && cs.playerShield <= 0;
     const fled = isDone && cs.playerShield > 0 && cs.enemyHp > 0;
 
-    let header = cs.isBoss ? '👑 BOSS BATTLE!' : '⚔️ SPACE BATTLE!';
-    if (won) header = '🎉 VICTORY!';
+    let header = cs.isMegaBoss ? '💀 MEGA BOSS BATTLE! 💀' : cs.isBoss ? '👑 BOSS BATTLE!' : '⚔️ SPACE BATTLE!';
+    if (won && cs.isMegaBoss) header = '🌌 THE GALAXY IS SAVED! 🌌';
+    else if (won) header = '🎉 VICTORY!';
     else if (lost) header = '💔 SHIELDS DOWN!';
     else if (fled) header = '🏃 ESCAPED!';
+
+    // Phase indicator for mega boss
+    let phaseHtml = '';
+    if (cs.isMegaBoss && !isDone) {
+        const phaseName = MEGA_BOSS.phaseNames[cs.phase - 1];
+        phaseHtml = '<div class="phase-indicator phase-' + cs.phase + '">⚡ Phase ' + cs.phase + ': ' + phaseName + '</div>';
+    }
 
     let actionsHtml = '';
     if (!isDone) {
         const canAct = cs.turnPhase === 'player';
         actionsHtml =
             '<button class="btn btn-combat-attack" onclick="combatAttack()" ' + (canAct ? '' : 'disabled') + '>⚔️ ATTACK!</button>' +
-            (cs.isBoss ? '' : '<button class="btn btn-combat-flee" onclick="combatFlee()" ' + (canAct ? '' : 'disabled') + '>🏃 Run Away!</button>');
+            (cs.isMegaBoss
+                ? '<button class="btn btn-combat-flee" onclick="combatFlee()" disabled title="No escape!">💀 No Escape!</button>'
+                : cs.isBoss ? '' : '<button class="btn btn-combat-flee" onclick="combatFlee()" ' + (canAct ? '' : 'disabled') + '>🏃 Run Away!</button>');
     } else {
         actionsHtml = '<button class="btn btn-primary btn-large" onclick="endCombat()">✅ Continue</button>';
     }
@@ -1521,9 +1894,12 @@ function renderCombat() {
     const shieldColor = shieldPct > 50 ? '#00d4ff' : shieldPct > 25 ? '#ffd93d' : '#ff6b6b';
     const enemyHpColor = enemyHpPct > 50 ? '#ff6b6b' : enemyHpPct > 25 ? '#ffd93d' : '#6bcb77';
 
+    const sceneClass = cs.isMegaBoss ? ' combat-megaboss' : '';
+
     overlay.innerHTML =
-        '<div class="combat-scene ' + (won ? 'combat-won' : lost ? 'combat-lost' : fled ? 'combat-fled' : '') + '">' +
+        '<div class="combat-scene ' + (won ? 'combat-won' : lost ? 'combat-lost' : fled ? 'combat-fled' : '') + sceneClass + '">' +
             '<div class="combat-header">' + header + '</div>' +
+            phaseHtml +
             '<div class="combat-arena">' +
                 '<div class="combatant">' +
                     '<div class="combatant-emoji">🚀</div>' +
@@ -1533,7 +1909,7 @@ function renderCombat() {
                 '</div>' +
                 '<div class="combat-vs">⚡</div>' +
                 '<div class="combatant">' +
-                    '<div class="combatant-emoji">' + cs.enemy.emoji + '</div>' +
+                    '<div class="combatant-emoji' + (cs.isMegaBoss ? ' megaboss-emoji' : '') + '">' + cs.enemy.emoji + '</div>' +
                     '<div class="combatant-label">' + cs.enemy.name + '</div>' +
                     '<div class="combat-bar"><div class="combat-bar-fill" style="width:' + enemyHpPct + '%;background:' + enemyHpColor + '"></div></div>' +
                     '<div class="combat-bar-text">❤️ ' + Math.max(0, cs.enemyHp) + ' / ' + cs.enemyMaxHp + '</div>' +
@@ -1724,6 +2100,20 @@ function renderStarMap() {
 
 function buildQuickActions(loc) {
     let html = '<div class="quick-actions"><div class="qa-title">⚡ Actions</div>';
+
+    // Mega boss challenge (available from any station after all bosses defeated)
+    const allBossesDefeated = game.bossesDefeated &&
+        Object.keys(BOSSES).every(id => game.bossesDefeated.includes(id));
+    if (allBossesDefeated && !game.megaBossDefeated && loc.type === 'station') {
+        html += '<div class="megaboss-challenge">' +
+            '<div class="megaboss-info">💀👑 <strong>The Soul Devourer</strong> — ' + MEGA_BOSS.desc + '</div>' +
+            '<div class="megaboss-warning">⚠️ The ultimate battle! No escape! ⚠️</div>' +
+            '<button class="btn btn-megaboss" onclick="challengeMegaBoss()">💀 Challenge the Soul Devourer!</button>' +
+        '</div>';
+    }
+    if (allBossesDefeated && game.megaBossDefeated && loc.type === 'station') {
+        html += '<div class="boss-defeated" style="border-color:var(--credits);background:rgba(255,215,0,0.08)">💀👑 Soul Devourer — DESTROYED! 🌌 Galaxy Saved! ✅</div>';
+    }
 
     // Boss challenge
     const bossHere = Object.entries(BOSSES).find(([id, b]) => b.location === game.currentLocation && !(game.bossesDefeated || []).includes(id));
@@ -2083,6 +2473,22 @@ function renderShip() {
             (defeated ? ' ✅' : '') + '</div>';
     }).join('');
 
+    // Mega boss progress
+    const allRegularDefeated = Object.keys(BOSSES).every(id => (game.bossesDefeated || []).includes(id));
+    let megaBossHtml = '';
+    if (allRegularDefeated) {
+        megaBossHtml = '<div class="boss-progress-item ' + (game.megaBossDefeated ? 'defeated megaboss-item' : 'megaboss-item-locked') + '">' +
+            '<span class="boss-emoji">' + (game.megaBossDefeated ? MEGA_BOSS.emoji : '💀') + '</span>' +
+            '<span>' + (game.megaBossDefeated ? MEGA_BOSS.name : 'Soul Devourer') + '</span>' +
+            (game.megaBossDefeated ? ' 🌌' : ' ❓') + '</div>';
+    } else {
+        megaBossHtml = '<div class="boss-progress-item megaboss-item-locked">' +
+            '<span class="boss-emoji">❓</span><span>???</span></div>';
+    }
+
+    const totalBosses = Object.keys(BOSSES).length + 1;
+    const defeatedCount = (game.bossesDefeated || []).length + (game.megaBossDefeated ? 1 : 0);
+
     const cs = game.combatStats || { wins: 0, losses: 0, fled: 0 };
 
     panel.innerHTML = '<div class="ship-panel"><h2>🚀 My Spaceship</h2>' +
@@ -2096,8 +2502,8 @@ function renderShip() {
             '<div class="ship-stat-card"><div class="label">🚀 Trips</div><div class="value">' + game.stats.tripsCount + '</div></div>' +
         '</div>' +
         '<div class="section-title">⬆️ Upgrades</div><div class="ship-upgrades-box">' + upgradeList + '</div>' +
-        '<div class="section-title">👑 Boss Progress (' + (game.bossesDefeated || []).length + '/' + Object.keys(BOSSES).length + ')</div>' +
-        '<div class="boss-progress-grid">' + bossProgressHtml + '</div>' +
+        '<div class="section-title">👑 Boss Progress (' + defeatedCount + '/' + totalBosses + ')</div>' +
+        '<div class="boss-progress-grid">' + bossProgressHtml + megaBossHtml + '</div>' +
         '<div class="section-title">🏆 Achievements (' + (game.achievements || []).length + '/' + Object.keys(ACHIEVEMENTS).length + ')</div>' +
         '<div class="achievements-grid">' + achHtml + '</div>' +
         '<div class="section-title">📊 Stats</div><div class="ship-stats-box">' +
