@@ -2162,6 +2162,10 @@ function renderSettings() {
                 '<p>🎶 Retro 80s chiptune music!</p>' +
                 '<p>🔈 All sounds are generated — no downloads needed.</p>' +
             '</div>' +
+            '<div class="settings-section settings-menu">' +
+                '<button class="btn btn-menu-main" onclick="confirmMainMenu()">🏠 Main Menu</button>' +
+                '<p class="menu-hint">Save & return to slot selection</p>' +
+            '</div>' +
         '</div>';
 }
 
@@ -2257,6 +2261,10 @@ function returnToMenu() {
     currentPrices = {};
     resetLocations();
     renderSlotPicker();
+}
+
+function confirmMainMenu() {
+    if (confirm('Return to main menu? Your game will be saved!')) returnToMenu();
 }
 
 // ─── INITIALIZATION ────────────────────────────────────────
