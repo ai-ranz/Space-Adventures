@@ -406,21 +406,66 @@ const LASER_ACCESS = [
 // ─── ENEMIES & BOSSES ──────────────────────────────────────
 
 const ENEMIES = [
-    { name: 'Space Pirate',  emoji: '🏴\u200d☠️', hp: 22,  attack: 5,  tier: 1, loot: [15, 40] },
-    { name: 'Alien Bug',     emoji: '🐛', hp: 18,  attack: 6,  tier: 1, loot: [10, 35] },
-    { name: 'Rogue Bot',     emoji: '🤖', hp: 32,  attack: 9,  tier: 2, loot: [30, 70] },
-    { name: 'Nebula Shark',  emoji: '🦈', hp: 40,  attack: 11, tier: 2, loot: [40, 90] },
-    { name: 'Dark Specter',  emoji: '👻', hp: 55,  attack: 14, tier: 3, loot: [60, 130] },
-    { name: 'Void Serpent',  emoji: '🐍', hp: 70,  attack: 18, tier: 4, loot: [90, 200] },
+    { name: 'Space Pirate',  emoji: '🏴\u200d☠️', hp: 25,  attack: 6,  tier: 1, loot: [12, 35] },
+    { name: 'Alien Bug',     emoji: '🐛', hp: 20,  attack: 7,  tier: 1, loot: [8, 30] },
+    { name: 'Rogue Bot',     emoji: '🤖', hp: 36,  attack: 10, tier: 2, loot: [25, 60] },
+    { name: 'Nebula Shark',  emoji: '🦈', hp: 45,  attack: 12, tier: 2, loot: [35, 80] },
+    { name: 'Dark Specter',  emoji: '👻', hp: 60,  attack: 16, tier: 3, loot: [50, 120] },
+    { name: 'Void Serpent',  emoji: '🐍', hp: 80,  attack: 20, tier: 4, loot: [80, 180] },
 ];
 
 const BOSSES = {
-    sandWorm:     { name: 'Sand Worm',     emoji: '🪱👑', hp: 45,  attack: 6,  location: 'dustyRock',     reward: 300,  desc: 'A giant worm hiding under the sand!' },
-    lavaLord:     { name: 'Lava Lord',      emoji: '😈🔥', hp: 80,  attack: 11, location: 'vulcanPrime',   reward: 800,  desc: 'A fiery demon from deep in the volcano!' },
-    pirateKing:   { name: 'Pirate King',    emoji: '🏴\u200d☠️👑', hp: 120, attack: 15, location: 'asteroidBelt',  reward: 1800, desc: 'The boss of all space pirates!' },
-    crystalTitan: { name: 'Crystal Titan',  emoji: '💎🗿', hp: 170, attack: 20, location: 'crystalFields', reward: 3500, desc: 'An ancient giant made of living crystals!' },
-    cosmicDragon: { name: 'Cosmic Dragon',  emoji: '🐉✨', hp: 250, attack: 28, location: 'theVoidEdge',   reward: 8000, desc: 'The ultimate space dragon! FINAL BOSS!' },
+    sandWorm:     { name: 'Sand Worm',     emoji: '🪱👑', hp: 50,  attack: 7,  location: 'dustyRock',     reward: 300,  desc: 'A giant worm hiding under the sand!' },
+    lavaLord:     { name: 'Lava Lord',      emoji: '😈🔥', hp: 95,  attack: 13, location: 'vulcanPrime',   reward: 800,  desc: 'A fiery demon from deep in the volcano!' },
+    pirateKing:   { name: 'Pirate King',    emoji: '🏴\u200d☠️👑', hp: 140, attack: 17, location: 'asteroidBelt',  reward: 1800, desc: 'The boss of all space pirates!' },
+    crystalTitan: { name: 'Crystal Titan',  emoji: '💎🗿', hp: 200, attack: 22, location: 'crystalFields', reward: 3500, desc: 'An ancient giant made of living crystals!' },
+    cosmicDragon: { name: 'Cosmic Dragon',  emoji: '🐉✨', hp: 280, attack: 30, location: 'theVoidEdge',   reward: 8000, desc: 'The ultimate space dragon! FINAL BOSS!' },
 };
+
+// ─── DIFFICULTY ─────────────────────────────────────────────
+
+const DIFFICULTY = {
+    easy: {
+        name: 'Explorer', emoji: '🌟', color: '#6bcb77',
+        desc: 'Relax and have fun! Gentler enemies, bigger rewards.',
+        details: '👾 Weaker enemies<br>🎁 +30% rewards<br>🏃 Easy to flee<br>💰 More starting coins',
+        enemyHpMult: 0.7, enemyAtkMult: 0.65,
+        bossHpMult: 0.75, bossAtkMult: 0.7,
+        encounterMult: 0.5,
+        rewardMult: 1.3,
+        lossPenaltyMult: 0.5,
+        fleeBonus: 0.15,
+        startCreditsMult: 1.25,
+    },
+    normal: {
+        name: 'Captain', emoji: '⚔️', color: '#ffd93d',
+        desc: 'A balanced space adventure with real challenge!',
+        details: '👾 Standard enemies<br>⚖️ Balanced rewards<br>🏃 Normal flee rate',
+        enemyHpMult: 1.0, enemyAtkMult: 1.0,
+        bossHpMult: 1.0, bossAtkMult: 1.0,
+        encounterMult: 1.0,
+        rewardMult: 1.0,
+        lossPenaltyMult: 1.0,
+        fleeBonus: 0,
+        startCreditsMult: 1.0,
+    },
+    hard: {
+        name: 'Commander', emoji: '💀', color: '#ff6b6b',
+        desc: 'Brutal! Only the toughest survive the Cosmic Dragon!',
+        details: '👾 Brutal enemies!<br>🎁 -30% rewards<br>🏃 Hard to flee<br>💀 Bosses are INSANE!',
+        enemyHpMult: 1.4, enemyAtkMult: 1.3,
+        bossHpMult: 1.35, bossAtkMult: 1.25,
+        encounterMult: 1.5,
+        rewardMult: 0.7,
+        lossPenaltyMult: 1.5,
+        fleeBonus: -0.15,
+        startCreditsMult: 0.7,
+    },
+};
+
+function getDifficulty() {
+    return DIFFICULTY[(game && game.difficulty) || 'normal'];
+}
 
 // ─── ACHIEVEMENTS ──────────────────────────────────────────
 
@@ -778,6 +823,7 @@ let currentPrices = {};
 
 function newGameState() {
     return {
+        difficulty: 'normal',
         credits: 1000,
         fuel: 100,
         currentLocation: 'havenStation',
@@ -928,9 +974,9 @@ function travel(locationId) {
         game.stats.distanceTraveled += Math.round(getDistance(fromId, locationId));
         game.stats.tripsCount++;
 
-        // Random encounter check based on route danger
+        // Random encounter check based on route danger + difficulty
         const maxDanger = Math.max(LOCATIONS[fromId].dangerLevel, loc.dangerLevel);
-        const encounterChance = maxDanger > 0 ? 0.10 + maxDanger * 0.08 : 0;
+        const encounterChance = maxDanger > 0 ? Math.min(0.6, (0.12 + maxDanger * 0.10) * getDifficulty().encounterMult) : 0;
 
         if (encounterChance > 0 && Math.random() < encounterChance) {
             pendingTravel = locationId;
@@ -1279,10 +1325,11 @@ function triggerMarketEvent() {
 let combatState = null;
 
 function pickRandomEnemy(dangerLevel) {
+    const diff = getDifficulty();
     const eligible = ENEMIES.filter(e => e.tier <= Math.max(1, dangerLevel));
     const picked = eligible[Math.floor(Math.random() * eligible.length)];
-    const hpScale = 0.85 + dangerLevel * 0.12 + Math.random() * 0.2;
-    return { ...picked, hp: Math.round(picked.hp * hpScale) };
+    const hpScale = (0.85 + dangerLevel * 0.12 + Math.random() * 0.2) * diff.enemyHpMult;
+    return { ...picked, hp: Math.round(picked.hp * hpScale), attack: Math.round(picked.attack * diff.enemyAtkMult) };
 }
 
 function startCombat(enemyData, isBoss, bossId) {
@@ -1344,9 +1391,10 @@ function enemyTurn() {
 function combatWin() {
     combatState.turnPhase = 'done';
     const enemy = combatState.enemy;
-    const creditReward = combatState.isBoss
+    const diff = getDifficulty();
+    const creditReward = Math.round((combatState.isBoss
         ? enemy.reward
-        : (enemy.loot[0] + Math.floor(Math.random() * (enemy.loot[1] - enemy.loot[0])));
+        : (enemy.loot[0] + Math.floor(Math.random() * (enemy.loot[1] - enemy.loot[0])))) * diff.rewardMult);
     game.credits += creditReward;
     game.stats.creditsEarned += creditReward;
 
@@ -1373,13 +1421,14 @@ function combatWin() {
 function combatLose() {
     combatState.turnPhase = 'done';
 
-    const lostCredits = Math.floor(game.credits * (0.10 + Math.random() * 0.10));
+    const diff = getDifficulty();
+    const lostCredits = Math.floor(game.credits * (0.10 + Math.random() * 0.10) * diff.lossPenaltyMult);
     game.credits = Math.max(0, game.credits - lostCredits);
 
     let lostItems = 0;
     for (const key of Object.keys(game.cargo)) {
         if (game.cargo[key] <= 0) continue;
-        const lose = Math.ceil(game.cargo[key] * (0.10 + Math.random() * 0.15));
+        const lose = Math.ceil(game.cargo[key] * (0.10 + Math.random() * 0.15) * diff.lossPenaltyMult);
         game.cargo[key] -= lose;
         lostItems += lose;
         if (game.cargo[key] <= 0) delete game.cargo[key];
@@ -1398,7 +1447,7 @@ function combatLose() {
 function combatFlee() {
     if (!combatState || combatState.turnPhase !== 'player') return;
 
-    const fleeChance = 0.35 + game.upgrades.engines * 0.10;
+    const fleeChance = Math.max(0.05, 0.35 + game.upgrades.engines * 0.10 + getDifficulty().fleeBonus);
 
     if (Math.random() < fleeChance) {
         combatState.turnPhase = 'done';
@@ -1435,7 +1484,8 @@ function endCombat() {
 function challengeBoss(bossId) {
     const boss = BOSSES[bossId];
     if (!boss) return;
-    startCombat({ ...boss, loot: null }, true, bossId);
+    const diff = getDifficulty();
+    startCombat({ ...boss, hp: Math.round(boss.hp * diff.bossHpMult), attack: Math.round(boss.attack * diff.bossAtkMult), loot: null }, true, bossId);
 }
 
 function renderCombat() {
@@ -1678,7 +1728,7 @@ function buildQuickActions(loc) {
         const [bossId, boss] = bossHere;
         html += '<div class="boss-challenge">' +
             '<div class="boss-info">' + boss.emoji + ' <strong>' + boss.name + '</strong> — ' + boss.desc + '</div>' +
-            '<div class="boss-reward">🏆 Reward: ' + formatCR(boss.reward) + '</div>' +
+            '<div class="boss-reward">🏆 Reward: ' + formatCR(Math.round(boss.reward * getDifficulty().rewardMult)) + '</div>' +
             '<button class="btn btn-boss" onclick="challengeBoss(\'' + bossId + '\')">⚔️ Fight ' + boss.name + '!</button>' +
         '</div>';
     }
@@ -2020,6 +2070,7 @@ function renderShip() {
     }).join('');
 
     const galaxyLabel = game.galaxy ? game.galaxy.name : 'Classic Galaxy';
+    const diffInfo = getDifficulty();
 
     const bossProgressHtml = Object.entries(BOSSES).map(([id, boss]) => {
         const defeated = (game.bossesDefeated || []).includes(id);
@@ -2032,7 +2083,7 @@ function renderShip() {
     const cs = game.combatStats || { wins: 0, losses: 0, fled: 0 };
 
     panel.innerHTML = '<div class="ship-panel"><h2>🚀 My Spaceship</h2>' +
-        '<div class="ship-galaxy-name">🌌 ' + galaxyLabel + '</div>' +
+        '<div class="ship-galaxy-name">🌌 ' + galaxyLabel + ' &nbsp;|&nbsp; <span style="color:' + diffInfo.color + '">' + diffInfo.emoji + ' ' + diffInfo.name + '</span></div>' +
         '<div class="ship-stats-grid">' +
             '<div class="ship-stat-card"><div class="label">💰 Coins</div><div class="value credits">' + formatCR(game.credits) + '</div></div>' +
             '<div class="ship-stat-card"><div class="label">⛽ Fuel</div><div class="value fuel">' + game.fuel + '/' + getMaxFuel() + '</div></div>' +
@@ -2183,6 +2234,7 @@ function getSlotSummary(n) {
                 mined: g.stats ? g.stats.totalMined || 0 : 0,
                 achievements: (g.achievements || []).length,
                 galaxyName: g.galaxy ? g.galaxy.name : 'Classic Galaxy',
+                difficulty: g.difficulty || 'normal',
             };
         }
     } catch (e) {}
@@ -2232,6 +2284,7 @@ function renderSlotPicker() {
                 '<div class="save-slot filled">' +
                     '<div class="slot-header">🌌 ' + s.galaxyName + '</div>' +
                     '<div class="slot-details">' +
+                        '<span class="slot-difficulty" style="color:' + (DIFFICULTY[s.difficulty] || DIFFICULTY.normal).color + '">' + (DIFFICULTY[s.difficulty] || DIFFICULTY.normal).emoji + ' ' + (DIFFICULTY[s.difficulty] || DIFFICULTY.normal).name + '</span>' +
                         '<span>💰 ' + s.credits.toLocaleString() + ' coins</span>' +
                         '<span>📍 ' + loc.emoji + ' ' + loc.name + '</span>' +
                         '<span>🚀 ' + s.trips + ' trips &nbsp; ⛏️ ' + s.mined + ' mined</span>' +
@@ -2271,18 +2324,44 @@ function loadAndPlay(n) {
 }
 
 function newGameInSlot(n) {
+    renderDifficultyPicker(n);
+}
+
+function renderDifficultyPicker(slotNum) {
+    const overlay = document.getElementById('intro-overlay');
+    let html = '<div class="intro-title">🚀 Space Adventures 🌟</div>' +
+        '<div class="intro-subtitle">Choose your difficulty!</div>' +
+        '<div class="difficulty-picker">';
+
+    for (const [key, diff] of Object.entries(DIFFICULTY)) {
+        html += '<div class="difficulty-option diff-' + key + '" onclick="startNewGame(' + slotNum + ',\'' + key + '\')">' +
+            '<div class="diff-emoji">' + diff.emoji + '</div>' +
+            '<div class="diff-name">' + diff.name + '</div>' +
+            '<div class="diff-desc">' + diff.desc + '</div>' +
+            '<div class="diff-details">' + diff.details + '</div>' +
+        '</div>';
+    }
+
+    html += '</div><button class="diff-back-btn" onclick="renderSlotPicker()">🔙 Back</button>';
+    overlay.innerHTML = html;
+}
+
+function startNewGame(n, difficultyKey) {
     activeSlot = n;
     resetLocations();
     const galaxy = generateGalaxy();
     applyGalaxy(galaxy);
 
+    const diff = DIFFICULTY[difficultyKey] || DIFFICULTY.normal;
     game = newGameState();
+    game.difficulty = difficultyKey;
     game.galaxy = galaxy;
-    game.credits = galaxy.startingCredits;
+    game.credits = Math.round(galaxy.startingCredits * diff.startCreditsMult);
 
     currentPrices = {};
     generatePrices('havenStation');
     addLog('🌌 Welcome to the ' + galaxy.name + ', Captain!', 'travel');
+    addLog(diff.emoji + ' Difficulty: ' + diff.name, 'travel');
     addLog('💡 Click Sandy Planet on the map and fly there!', 'travel');
 
     document.getElementById('intro-overlay').classList.add('hidden');

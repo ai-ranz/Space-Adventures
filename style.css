@@ -1448,3 +1448,90 @@ html, body {
 
 .boss-progress-item.defeated { border-color: var(--success); background: rgba(107, 203, 119, 0.08); }
 .boss-progress-item .boss-emoji { font-size: 1.2rem; display: block; margin-bottom: 2px; }
+
+/* ── Difficulty Picker ── */
+.difficulty-picker {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 14px;
+    max-width: 420px;
+    margin: 0 auto;
+}
+
+.difficulty-picker h2 {
+    font-size: 1.2rem;
+    margin-bottom: 4px;
+    background: linear-gradient(135deg, var(--accent), #d17bff);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+}
+
+.difficulty-option {
+    width: 100%;
+    background: var(--surface);
+    border: 2px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    cursor: pointer;
+    text-align: left;
+    transition: border-color 0.2s, transform 0.2s, box-shadow 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.difficulty-option:hover { transform: translateY(-2px); box-shadow: 0 4px 16px rgba(0,0,0,0.3); }
+.difficulty-option.diff-easy:hover { border-color: #6bcb77; }
+.difficulty-option.diff-normal:hover { border-color: #ffd93d; }
+.difficulty-option.diff-hard:hover { border-color: #ff6b6b; }
+
+.diff-emoji { font-size: 2rem; flex-shrink: 0; }
+.diff-text { flex: 1; }
+
+.diff-name {
+    font-size: 1rem;
+    font-weight: 800;
+    margin-bottom: 2px;
+}
+
+.diff-easy .diff-name { color: #6bcb77; }
+.diff-normal .diff-name { color: #ffd93d; }
+.diff-hard .diff-name { color: #ff6b6b; }
+
+.diff-desc {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    margin-bottom: 4px;
+}
+
+.diff-details {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    opacity: 0.8;
+    line-height: 1.5;
+}
+
+.diff-back-btn {
+    background: none;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text-muted);
+    padding: 8px 20px;
+    cursor: pointer;
+    font-size: 0.85rem;
+    transition: all 0.2s;
+    margin-top: 4px;
+}
+
+.diff-back-btn:hover { color: var(--text); border-color: var(--accent); }
+
+.slot-difficulty {
+    display: inline-block;
+    font-size: 0.7rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-top: 4px;
+}
