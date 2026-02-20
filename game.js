@@ -371,6 +371,28 @@ const UPGRADES = {
             { cost: 20000, access: 5, desc: '🌟 MEGA — EVERYWHERE!! ⭐⭐⭐⭐⭐' },
         ],
     },
+    weapons: {
+        name: 'Laser Cannon', icon: '🔫',
+        description: 'Blast space baddies in battle!',
+        levels: [
+            { cost: 0,     damage: 8,  desc: 'Pea Shooter — 8 damage' },
+            { cost: 500,   damage: 14, desc: 'Zapper — 14 damage!' },
+            { cost: 2000,  damage: 22, desc: 'Blaster — 22 damage!!' },
+            { cost: 7000,  damage: 32, desc: 'Mega Gun — 32 damage!!!' },
+            { cost: 20000, damage: 45, desc: '🌟 ULTRA — 45 damage!!!!' },
+        ],
+    },
+    shields: {
+        name: 'Energy Shield', icon: '🔋',
+        description: 'Block enemy attacks in battle!',
+        levels: [
+            { cost: 0,     maxShield: 30,  desc: 'Weak — 30 shield' },
+            { cost: 400,   maxShield: 55,  desc: 'Better — 55 shield' },
+            { cost: 1800,  maxShield: 85,  desc: 'Strong — 85 shield!' },
+            { cost: 5500,  maxShield: 125, desc: 'Super — 125 shield!!' },
+            { cost: 16000, maxShield: 180, desc: '🌟 MEGA — 180 shield!!!' },
+        ],
+    },
 };
 
 const LASER_ACCESS = [
@@ -380,6 +402,25 @@ const LASER_ACCESS = [
     [1.0, 1.0,  1.0,  0.45],
     [1.0, 1.0,  1.0,  1.0],
 ];
+
+// ─── ENEMIES & BOSSES ──────────────────────────────────────
+
+const ENEMIES = [
+    { name: 'Space Pirate',  emoji: '🏴\u200d☠️', hp: 22,  attack: 5,  tier: 1, loot: [15, 40] },
+    { name: 'Alien Bug',     emoji: '🐛', hp: 18,  attack: 6,  tier: 1, loot: [10, 35] },
+    { name: 'Rogue Bot',     emoji: '🤖', hp: 32,  attack: 9,  tier: 2, loot: [30, 70] },
+    { name: 'Nebula Shark',  emoji: '🦈', hp: 40,  attack: 11, tier: 2, loot: [40, 90] },
+    { name: 'Dark Specter',  emoji: '👻', hp: 55,  attack: 14, tier: 3, loot: [60, 130] },
+    { name: 'Void Serpent',  emoji: '🐍', hp: 70,  attack: 18, tier: 4, loot: [90, 200] },
+];
+
+const BOSSES = {
+    sandWorm:     { name: 'Sand Worm',     emoji: '🪱👑', hp: 45,  attack: 6,  location: 'dustyRock',     reward: 300,  desc: 'A giant worm hiding under the sand!' },
+    lavaLord:     { name: 'Lava Lord',      emoji: '😈🔥', hp: 80,  attack: 11, location: 'vulcanPrime',   reward: 800,  desc: 'A fiery demon from deep in the volcano!' },
+    pirateKing:   { name: 'Pirate King',    emoji: '🏴\u200d☠️👑', hp: 120, attack: 15, location: 'asteroidBelt',  reward: 1800, desc: 'The boss of all space pirates!' },
+    crystalTitan: { name: 'Crystal Titan',  emoji: '💎🗿', hp: 170, attack: 20, location: 'crystalFields', reward: 3500, desc: 'An ancient giant made of living crystals!' },
+    cosmicDragon: { name: 'Cosmic Dragon',  emoji: '🐉✨', hp: 250, attack: 28, location: 'theVoidEdge',   reward: 8000, desc: 'The ultimate space dragon! FINAL BOSS!' },
+};
 
 // ─── ACHIEVEMENTS ──────────────────────────────────────────
 
@@ -396,6 +437,10 @@ const ACHIEVEMENTS = {
     legendaryFind:  { name: 'LEGENDARY!',           emoji: '🦄', desc: 'Find a legendary resource!', check: g => g.foundLegendary },
     fullUpgrade:    { name: 'Maxed Out!',           emoji: '🌟', desc: 'Max out any upgrade!', check: g => Object.values(g.upgrades).some(v => v >= 5) },
     allPlaces:      { name: 'Galaxy Master!',       emoji: '🌌', desc: 'Visit every place!', check: g => (g.visited || []).length >= Object.keys(LOCATIONS).length },
+    firstCombatWin: { name: 'Space Fighter!',       emoji: '⚔️', desc: 'Win your first battle!', check: g => (g.combatStats ? g.combatStats.wins : 0) >= 1 },
+    combatPro:      { name: 'Battle Hero!',         emoji: '🦸', desc: 'Win 10 battles!', check: g => (g.combatStats ? g.combatStats.wins : 0) >= 10 },
+    bossSlayer:     { name: 'Boss Slayer!',         emoji: '👑', desc: 'Defeat a boss!', check: g => (g.bossesDefeated || []).length >= 1 },
+    dragonSlayer:   { name: 'Dragon Slayer!!',      emoji: '🐉', desc: 'Defeat ALL bosses!', check: g => (g.bossesDefeated || []).length >= Object.keys(BOSSES).length },
 };
 
 // ─── BUDDY TIPS ────────────────────────────────────────────
@@ -425,6 +470,9 @@ function getBuddyTip() {
     if (loc.canTrade && getCargoUsed() === 0 && game.fuel > 30)
         return { msg: "Nothing to sell? Fly to a planet and mine!", emoji: '🚀' };
 
+    const bossHere = Object.entries(BOSSES).find(([id, b]) => b.location === game.currentLocation && !(game.bossesDefeated || []).includes(id));
+    if (bossHere) return { msg: bossHere[1].emoji + ' ' + bossHere[1].name + ' is here! Challenge them?', emoji: '⚔️' };
+
     const tips = [
         { msg: "Alien Market pays the MOST for legendary stuff!", emoji: '👽' },
         { msg: "Upgrading engines saves fuel for long trips!", emoji: '🧠' },
@@ -434,6 +482,10 @@ function getBuddyTip() {
         { msg: "You're doing amazing, Captain! 🌟", emoji: '🎉' },
         { msg: "Crystal Caves are full of Rainbow Crystals!", emoji: '💎' },
         { msg: "Bigger backpack = more treasure per trip!", emoji: '🎒' },
+        { msg: "Watch out for space baddies during travel! ⚔️", emoji: '🏴\u200d☠️' },
+        { msg: "Upgrade your weapons to fight tougher enemies!", emoji: '🔫' },
+        { msg: "Stronger shields help survive battles!", emoji: '🔋' },
+        { msg: "Challenge bosses on planets for big rewards!", emoji: '👑' },
     ];
     return tips[Math.floor(Math.random() * tips.length)];
 }
@@ -668,6 +720,24 @@ const RetroAudio = (() => {
             }
             case 'error': playSeq([200, 150], 0.1, 'square', 0.1); break;
             case 'newgame': playSeq([262, 330, 392, 523, 659, 784], 0.12, 'square', 0.1); break;
+            case 'combat-start': playSeq([200, 300, 200, 400], 0.08, 'square', 0.1); break;
+            case 'boss-appear': playSeq([100, 150, 200, 300, 400, 500], 0.1, 'sawtooth', 0.12); break;
+            case 'attack': playSeq([600, 900, 1200], 0.04, 'square', 0.1); break;
+            case 'player-hit': playSeq([400, 200, 100], 0.06, 'square', 0.1); break;
+            case 'combat-win': playSeq([523, 659, 784, 1047, 1319, 1568], 0.1, 'square', 0.13); break;
+            case 'combat-lose': playSeq([400, 300, 200, 100], 0.12, 'triangle', 0.1); break;
+            case 'flee': {
+                const osc = ctx.createOscillator();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(800, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.3);
+                const env = ctx.createGain();
+                env.gain.setValueAtTime(0.08, ctx.currentTime);
+                env.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+                osc.connect(env); env.connect(sfxGain);
+                osc.start(); osc.stop(ctx.currentTime + 0.4);
+                break;
+            }
         }
     }
 
@@ -715,6 +785,7 @@ function newGameState() {
         upgrades: {
             miningLaser: 1, cargoHold: 1, fuelTank: 1,
             engines: 1, scanner: 1, hull: 1,
+            weapons: 1, shields: 1,
         },
         stats: {
             totalMined: 0, totalSold: 0, totalBought: 0,
@@ -730,6 +801,8 @@ function newGameState() {
         visited: ['havenStation'],
         foundRare: false,
         foundLegendary: false,
+        bossesDefeated: [],
+        combatStats: { wins: 0, losses: 0, fled: 0 },
         galaxy: null,
     };
 }
@@ -742,6 +815,8 @@ function getCargoUsed() { let t = 0; for (const q of Object.values(game.cargo)) 
 function getMiningTime() { return UPGRADES.miningLaser.levels[game.upgrades.miningLaser - 1].miningTime; }
 function getFuelModifier() { return UPGRADES.engines.levels[game.upgrades.engines - 1].fuelMod; }
 function getHullAccess() { return UPGRADES.hull.levels[game.upgrades.hull - 1].access; }
+function getWeaponDamage() { return UPGRADES.weapons.levels[game.upgrades.weapons - 1].damage; }
+function getMaxShield() { return UPGRADES.shields.levels[game.upgrades.shields - 1].maxShield; }
 
 function getDistance(from, to) {
     const a = LOCATIONS[from], b = LOCATIONS[to];
@@ -825,6 +900,8 @@ function showTravelAnimation(fromId, toId, callback) {
 
 // ─── CORE GAME LOGIC ──────────────────────────────────────
 
+let pendingTravel = null;
+
 function travel(locationId) {
     if (locationId === game.currentLocation || travelAnimating) return;
 
@@ -850,25 +927,42 @@ function travel(locationId) {
         game.fuel -= cost;
         game.stats.distanceTraveled += Math.round(getDistance(fromId, locationId));
         game.stats.tripsCount++;
-        game.currentLocation = locationId;
-        game.selectedLocation = locationId;
 
-        if (!game.visited) game.visited = [];
-        if (!game.visited.includes(locationId)) game.visited.push(locationId);
+        // Random encounter check based on route danger
+        const maxDanger = Math.max(LOCATIONS[fromId].dangerLevel, loc.dangerLevel);
+        const encounterChance = maxDanger > 0 ? 0.10 + maxDanger * 0.08 : 0;
 
-        addLog('🚀 Flew to ' + loc.emoji + ' ' + loc.name + '! Used ' + cost + ' fuel.', 'travel');
+        if (encounterChance > 0 && Math.random() < encounterChance) {
+            pendingTravel = locationId;
+            const enemy = pickRandomEnemy(maxDanger);
+            startCombat(enemy, false, null);
+            return;
+        }
 
-        if (game.fuel <= getMaxFuel() * 0.15)
-            addLog('⚠️ Fuel getting low! (' + game.fuel + ' left)', 'warning');
-
-        if (loc.canTrade) generatePrices(locationId);
-        if (Math.random() < 0.2) triggerMarketEvent();
-
-        cancelMining();
-        updateAll();
-        checkAchievements();
-        saveGame();
+        arriveAt(locationId);
     });
+}
+
+function arriveAt(locationId) {
+    const loc = LOCATIONS[locationId];
+    game.currentLocation = locationId;
+    game.selectedLocation = locationId;
+
+    if (!game.visited) game.visited = [];
+    if (!game.visited.includes(locationId)) game.visited.push(locationId);
+
+    addLog('🚀 Arrived at ' + loc.emoji + ' ' + loc.name + '!', 'travel');
+
+    if (game.fuel <= getMaxFuel() * 0.15)
+        addLog('⚠️ Fuel getting low! (' + game.fuel + ' left)', 'warning');
+
+    if (loc.canTrade) generatePrices(locationId);
+    if (Math.random() < 0.2) triggerMarketEvent();
+
+    cancelMining();
+    updateAll();
+    checkAchievements();
+    saveGame();
 }
 
 function generatePrices(locationId) {
@@ -1180,6 +1274,226 @@ function triggerMarketEvent() {
     if (evt.fuel) game.fuel = Math.max(1, Math.min(getMaxFuel(), game.fuel + evt.fuel));
 }
 
+// ─── COMBAT SYSTEM ─────────────────────────────────────────
+
+let combatState = null;
+
+function pickRandomEnemy(dangerLevel) {
+    const eligible = ENEMIES.filter(e => e.tier <= Math.max(1, dangerLevel));
+    const picked = eligible[Math.floor(Math.random() * eligible.length)];
+    const hpScale = 0.85 + dangerLevel * 0.12 + Math.random() * 0.2;
+    return { ...picked, hp: Math.round(picked.hp * hpScale) };
+}
+
+function startCombat(enemyData, isBoss, bossId) {
+    const maxShield = getMaxShield();
+    combatState = {
+        enemy: enemyData,
+        enemyHp: enemyData.hp,
+        enemyMaxHp: enemyData.hp,
+        playerShield: maxShield,
+        maxShield: maxShield,
+        isBoss: !!isBoss,
+        bossId: bossId,
+        turnPhase: 'player',
+        log: [],
+    };
+    combatState.log.push(enemyData.emoji + ' ' + enemyData.name + ' appeared!');
+    RetroAudio.sfx(isBoss ? 'boss-appear' : 'combat-start');
+    renderCombat();
+    document.getElementById('combat-overlay').classList.add('active');
+}
+
+function combatAttack() {
+    if (!combatState || combatState.turnPhase !== 'player') return;
+
+    const baseDmg = getWeaponDamage();
+    const damage = baseDmg + Math.floor(Math.random() * baseDmg * 0.4);
+    combatState.enemyHp = Math.max(0, combatState.enemyHp - damage);
+
+    const words = ['POW!', 'ZAP!', 'BOOM!', 'WHAM!', 'KAPOW!', 'BAM!'];
+    combatState.log.push('⚔️ ' + words[Math.floor(Math.random() * words.length)] + ' Hit for ' + damage + ' damage!');
+    RetroAudio.sfx('attack');
+
+    if (combatState.enemyHp <= 0) { combatWin(); return; }
+
+    combatState.turnPhase = 'enemy';
+    renderCombat();
+    setTimeout(() => {
+        if (!combatState || combatState.turnPhase !== 'enemy') return;
+        enemyTurn();
+    }, 600);
+}
+
+function enemyTurn() {
+    const enemy = combatState.enemy;
+    const baseDmg = enemy.attack;
+    const damage = baseDmg + Math.floor(Math.random() * baseDmg * 0.4);
+    combatState.playerShield = Math.max(0, combatState.playerShield - damage);
+
+    const words = ['OUCH!', 'OOF!', 'YIKES!', 'BONK!', 'CRASH!', 'BAM!'];
+    combatState.log.push(enemy.emoji + ' ' + words[Math.floor(Math.random() * words.length)] + ' ' + enemy.name + ' hits for ' + damage + '!');
+    RetroAudio.sfx('player-hit');
+
+    if (combatState.playerShield <= 0) { combatLose(); return; }
+
+    combatState.turnPhase = 'player';
+    renderCombat();
+}
+
+function combatWin() {
+    combatState.turnPhase = 'done';
+    const enemy = combatState.enemy;
+    const creditReward = combatState.isBoss
+        ? enemy.reward
+        : (enemy.loot[0] + Math.floor(Math.random() * (enemy.loot[1] - enemy.loot[0])));
+    game.credits += creditReward;
+    game.stats.creditsEarned += creditReward;
+
+    combatState.log.push('🎉 YOU WON! +' + formatCR(creditReward) + '!');
+
+    if (combatState.isBoss && combatState.bossId) {
+        if (!game.bossesDefeated) game.bossesDefeated = [];
+        if (!game.bossesDefeated.includes(combatState.bossId)) {
+            game.bossesDefeated.push(combatState.bossId);
+        }
+        combatState.log.push('👑 BOSS DEFEATED! ' + enemy.name + ' is no more!');
+    }
+
+    if (!game.combatStats) game.combatStats = { wins: 0, losses: 0, fled: 0 };
+    game.combatStats.wins++;
+
+    RetroAudio.sfx('combat-win');
+    spawnConfetti();
+    renderCombat();
+    checkAchievements();
+    saveGame();
+}
+
+function combatLose() {
+    combatState.turnPhase = 'done';
+
+    const lostCredits = Math.floor(game.credits * (0.10 + Math.random() * 0.10));
+    game.credits = Math.max(0, game.credits - lostCredits);
+
+    let lostItems = 0;
+    for (const key of Object.keys(game.cargo)) {
+        if (game.cargo[key] <= 0) continue;
+        const lose = Math.ceil(game.cargo[key] * (0.10 + Math.random() * 0.15));
+        game.cargo[key] -= lose;
+        lostItems += lose;
+        if (game.cargo[key] <= 0) delete game.cargo[key];
+    }
+
+    combatState.log.push('💔 Shields down! Lost ' + formatCR(lostCredits) + (lostItems > 0 ? ' and ' + lostItems + ' items!' : '!'));
+
+    if (!game.combatStats) game.combatStats = { wins: 0, losses: 0, fled: 0 };
+    game.combatStats.losses++;
+
+    RetroAudio.sfx('combat-lose');
+    renderCombat();
+    saveGame();
+}
+
+function combatFlee() {
+    if (!combatState || combatState.turnPhase !== 'player') return;
+
+    const fleeChance = 0.35 + game.upgrades.engines * 0.10;
+
+    if (Math.random() < fleeChance) {
+        combatState.turnPhase = 'done';
+        combatState.log.push('🏃 Escaped! Phew!');
+        if (!game.combatStats) game.combatStats = { wins: 0, losses: 0, fled: 0 };
+        game.combatStats.fled++;
+        RetroAudio.sfx('flee');
+        renderCombat();
+        saveGame();
+    } else {
+        combatState.log.push("🏃 Couldn't escape!");
+        combatState.turnPhase = 'enemy';
+        renderCombat();
+        setTimeout(() => {
+            if (!combatState || combatState.turnPhase !== 'enemy') return;
+            enemyTurn();
+        }, 600);
+    }
+}
+
+function endCombat() {
+    document.getElementById('combat-overlay').classList.remove('active');
+    const dest = pendingTravel;
+    pendingTravel = null;
+
+    if (dest) {
+        arriveAt(dest);
+    } else {
+        updateAll();
+    }
+    combatState = null;
+}
+
+function challengeBoss(bossId) {
+    const boss = BOSSES[bossId];
+    if (!boss) return;
+    startCombat({ ...boss, loot: null }, true, bossId);
+}
+
+function renderCombat() {
+    if (!combatState) return;
+    const cs = combatState;
+    const overlay = document.getElementById('combat-overlay');
+
+    const enemyHpPct = Math.max(0, cs.enemyHp / cs.enemyMaxHp * 100).toFixed(1);
+    const shieldPct = Math.max(0, cs.playerShield / cs.maxShield * 100).toFixed(1);
+
+    const isDone = cs.turnPhase === 'done';
+    const won = isDone && cs.enemyHp <= 0;
+    const lost = isDone && cs.playerShield <= 0;
+    const fled = isDone && cs.playerShield > 0 && cs.enemyHp > 0;
+
+    let header = cs.isBoss ? '👑 BOSS BATTLE!' : '⚔️ SPACE BATTLE!';
+    if (won) header = '🎉 VICTORY!';
+    else if (lost) header = '💔 SHIELDS DOWN!';
+    else if (fled) header = '🏃 ESCAPED!';
+
+    let actionsHtml = '';
+    if (!isDone) {
+        const canAct = cs.turnPhase === 'player';
+        actionsHtml =
+            '<button class="btn btn-combat-attack" onclick="combatAttack()" ' + (canAct ? '' : 'disabled') + '>⚔️ ATTACK!</button>' +
+            (cs.isBoss ? '' : '<button class="btn btn-combat-flee" onclick="combatFlee()" ' + (canAct ? '' : 'disabled') + '>🏃 Run Away!</button>');
+    } else {
+        actionsHtml = '<button class="btn btn-primary btn-large" onclick="endCombat()">✅ Continue</button>';
+    }
+
+    const logHtml = cs.log.slice(-6).map(l => '<div class="combat-log-line">' + l + '</div>').join('');
+
+    const shieldColor = shieldPct > 50 ? '#00d4ff' : shieldPct > 25 ? '#ffd93d' : '#ff6b6b';
+    const enemyHpColor = enemyHpPct > 50 ? '#ff6b6b' : enemyHpPct > 25 ? '#ffd93d' : '#6bcb77';
+
+    overlay.innerHTML =
+        '<div class="combat-scene ' + (won ? 'combat-won' : lost ? 'combat-lost' : fled ? 'combat-fled' : '') + '">' +
+            '<div class="combat-header">' + header + '</div>' +
+            '<div class="combat-arena">' +
+                '<div class="combatant">' +
+                    '<div class="combatant-emoji">🚀</div>' +
+                    '<div class="combatant-label">Your Ship</div>' +
+                    '<div class="combat-bar"><div class="combat-bar-fill" style="width:' + shieldPct + '%;background:' + shieldColor + '"></div></div>' +
+                    '<div class="combat-bar-text">🔋 ' + Math.max(0, cs.playerShield) + ' / ' + cs.maxShield + '</div>' +
+                '</div>' +
+                '<div class="combat-vs">⚡</div>' +
+                '<div class="combatant">' +
+                    '<div class="combatant-emoji">' + cs.enemy.emoji + '</div>' +
+                    '<div class="combatant-label">' + cs.enemy.name + '</div>' +
+                    '<div class="combat-bar"><div class="combat-bar-fill" style="width:' + enemyHpPct + '%;background:' + enemyHpColor + '"></div></div>' +
+                    '<div class="combat-bar-text">❤️ ' + Math.max(0, cs.enemyHp) + ' / ' + cs.enemyMaxHp + '</div>' +
+                '</div>' +
+            '</div>' +
+            '<div class="combat-log">' + logHtml + '</div>' +
+            '<div class="combat-actions">' + actionsHtml + '</div>' +
+        '</div>';
+}
+
 // ─── EVENT LOG ─────────────────────────────────────────────
 
 function addLog(message, type) {
@@ -1357,6 +1671,21 @@ function renderStarMap() {
 
 function buildQuickActions(loc) {
     let html = '<div class="quick-actions"><div class="qa-title">⚡ Actions</div>';
+
+    // Boss challenge
+    const bossHere = Object.entries(BOSSES).find(([id, b]) => b.location === game.currentLocation && !(game.bossesDefeated || []).includes(id));
+    if (bossHere) {
+        const [bossId, boss] = bossHere;
+        html += '<div class="boss-challenge">' +
+            '<div class="boss-info">' + boss.emoji + ' <strong>' + boss.name + '</strong> — ' + boss.desc + '</div>' +
+            '<div class="boss-reward">🏆 Reward: ' + formatCR(boss.reward) + '</div>' +
+            '<button class="btn btn-boss" onclick="challengeBoss(\'' + bossId + '\')">⚔️ Fight ' + boss.name + '!</button>' +
+        '</div>';
+    }
+    const defeatedBossHere = Object.entries(BOSSES).find(([id, b]) => b.location === game.currentLocation && (game.bossesDefeated || []).includes(id));
+    if (defeatedBossHere) {
+        html += '<div class="boss-defeated">' + defeatedBossHere[1].emoji + ' ' + defeatedBossHere[1].name + ' — DEFEATED! ✅</div>';
+    }
 
     // Mine button
     if (loc.canMine) {
@@ -1691,6 +2020,17 @@ function renderShip() {
     }).join('');
 
     const galaxyLabel = game.galaxy ? game.galaxy.name : 'Classic Galaxy';
+
+    const bossProgressHtml = Object.entries(BOSSES).map(([id, boss]) => {
+        const defeated = (game.bossesDefeated || []).includes(id);
+        return '<div class="boss-progress-item ' + (defeated ? 'defeated' : '') + '">' +
+            '<span class="boss-emoji">' + (defeated ? boss.emoji : '❓') + '</span>' +
+            '<span>' + (defeated ? boss.name : '???') + '</span>' +
+            (defeated ? ' ✅' : '') + '</div>';
+    }).join('');
+
+    const cs = game.combatStats || { wins: 0, losses: 0, fled: 0 };
+
     panel.innerHTML = '<div class="ship-panel"><h2>🚀 My Spaceship</h2>' +
         '<div class="ship-galaxy-name">🌌 ' + galaxyLabel + '</div>' +
         '<div class="ship-stats-grid">' +
@@ -1702,6 +2042,8 @@ function renderShip() {
             '<div class="ship-stat-card"><div class="label">🚀 Trips</div><div class="value">' + game.stats.tripsCount + '</div></div>' +
         '</div>' +
         '<div class="section-title">⬆️ Upgrades</div><div class="ship-upgrades-box">' + upgradeList + '</div>' +
+        '<div class="section-title">👑 Boss Progress (' + (game.bossesDefeated || []).length + '/' + Object.keys(BOSSES).length + ')</div>' +
+        '<div class="boss-progress-grid">' + bossProgressHtml + '</div>' +
         '<div class="section-title">🏆 Achievements (' + (game.achievements || []).length + '/' + Object.keys(ACHIEVEMENTS).length + ')</div>' +
         '<div class="achievements-grid">' + achHtml + '</div>' +
         '<div class="section-title">📊 Stats</div><div class="ship-stats-box">' +
@@ -1710,7 +2052,10 @@ function renderShip() {
             '🛒 Bought: <span class="text-accent">' + game.stats.totalBought + '</span><br>' +
             '💰 Earned: <span class="text-credits">' + formatCR(game.stats.creditsEarned) + '</span><br>' +
             '💸 Spent: <span class="text-danger">' + formatCR(game.stats.creditsSpent) + '</span><br>' +
-            '🚀 Distance: <span class="text-accent">' + game.stats.distanceTraveled.toLocaleString() + ' miles</span>' +
+            '🚀 Distance: <span class="text-accent">' + game.stats.distanceTraveled.toLocaleString() + ' miles</span><br>' +
+            '⚔️ Battles Won: <span class="text-accent">' + cs.wins + '</span><br>' +
+            '💔 Battles Lost: <span class="text-danger">' + cs.losses + '</span><br>' +
+            '🏃 Fled: <span class="text-muted">' + cs.fled + '</span>' +
         '</div>' +
         renderCargoSummary() +
         '<div class="ship-actions"><button class="btn btn-primary" onclick="returnToMenu()">🔙 Main Menu</button></div></div>';
