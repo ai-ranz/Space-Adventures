@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Adventures 🚀</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#0a0e1a">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+</head>
+<body>
+    <!-- Intro / Save Slot Screen -->
+    <div class="intro-overlay" id="intro-overlay"></div>
+
+    <!-- Travel Animation Overlay -->
+    <div class="travel-overlay" id="travel-overlay">
+        <div class="travel-stars" id="travel-stars"></div>
+        <div class="travel-scene">
+            <span class="travel-loc-emoji" id="travel-from-emoji">🏠</span>
+            <div class="travel-ship-wrap">
+                <div class="travel-ship">🚀</div>
+            </div>
+            <span class="travel-loc-emoji" id="travel-to-emoji">🏜️</span>
+        </div>
+        <div class="travel-text" id="travel-dest-text">Flying to Sandy Planet!</div>
+    </div>
+
+    <!-- Confetti Container -->
+    <div id="confetti-container"></div>
+
+    <!-- Main App -->
+    <div class="app-container">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <div class="status-item">
+                <span class="label">Coins</span>
+                <span class="value credits" id="credits-value">💰 1,000 coins</span>
+            </div>
+            <div class="status-item">
+                <span class="label">Fuel</span>
+                <span class="value fuel" id="fuel-value">100/100</span>
+                <div class="mini-bar"><div class="mini-bar-fill" id="fuel-bar"></div></div>
+            </div>
+            <div class="status-item">
+                <span class="label">Backpack</span>
+                <span class="value accent" id="cargo-value">0/25</span>
+                <div class="mini-bar"><div class="mini-bar-fill" id="cargo-bar"></div></div>
+            </div>
+            <div class="status-item">
+                <span class="label">Location</span>
+                <span class="value accent" id="location-value">🏠 Haven Station</span>
+            </div>
+        </div>
+
+        <!-- Buddy Tip Bar -->
+        <div class="buddy-bar">
+            <span id="buddy-message"><span class="buddy-emoji">🤖</span> <span class="buddy-text">Hi! I'm Bleep! Let's explore space!</span></span>
+        </div>
+
+        <!-- Navigation -->
+        <div class="nav-bar">
+            <button class="nav-btn active" data-panel="starmap">🗺️ Map</button>
+            <button class="nav-btn" data-panel="mining">⛏️ Mining</button>
+            <button class="nav-btn" data-panel="trading">💰 Trading</button>
+            <button class="nav-btn" data-panel="upgrades">⬆️ Upgrades</button>
+            <button class="nav-btn" data-panel="ship">🚀 Ship</button>
+        </div>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <div class="panel-area">
+                <div class="panel active" id="panel-starmap"></div>
+                <div class="panel" id="panel-mining"></div>
+                <div class="panel" id="panel-trading"></div>
+                <div class="panel" id="panel-upgrades"></div>
+                <div class="panel" id="panel-ship"></div>
+            </div>
+        </div>
+
+        <!-- Bottom Log Bar -->
+        <div class="log-bar" id="log-bar">
+            <div class="log-bar-header" onclick="toggleLog()">
+                <span>📜 Adventure Log</span>
+                <span class="log-toggle-icon" id="log-toggle-icon">▼</span>
+            </div>
+            <div class="log-bar-content" id="events-container"></div>
+        </div>
+    </div>
+
+    <script src="game.js"></script>
+    <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('./sw.js');</script>
+</body>
+</html>
