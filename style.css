@@ -75,6 +75,8 @@ html, body {
 .status-item .value.credits { color: var(--credits); }
 .status-item .value.fuel { color: var(--accent); }
 .status-item .value.accent { color: var(--accent); }
+.status-item .value.shield { color: #00d4ff; }
+.mini-bar-shield { background: linear-gradient(90deg, #0078d4, #00d4ff) !important; }
 
 .mini-bar {
     width: 100%;

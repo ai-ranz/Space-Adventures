@@ -1591,12 +1591,15 @@ function updateAll() {
 
 function updateStatusBar() {
     const maxFuel = getMaxFuel(), maxCargo = getMaxCargo(), cargoUsed = getCargoUsed();
+    const maxShield = getMaxShield(), shieldLvl = game.upgrades.shields, maxLvl = UPGRADES.shields.levels.length;
     document.getElementById('credits-value').textContent = '💰 ' + formatCR(game.credits);
     document.getElementById('fuel-value').textContent = game.fuel + '/' + maxFuel;
     document.getElementById('cargo-value').textContent = cargoUsed + '/' + maxCargo;
+    document.getElementById('shield-value').textContent = '🔋 ' + maxShield;
     document.getElementById('location-value').textContent = LOCATIONS[game.currentLocation].emoji + ' ' + LOCATIONS[game.currentLocation].name;
     document.getElementById('fuel-bar').style.width = (game.fuel / maxFuel * 100) + '%';
     document.getElementById('cargo-bar').style.width = (cargoUsed / maxCargo * 100) + '%';
+    document.getElementById('shield-bar').style.width = (shieldLvl / maxLvl * 100) + '%';
 }
 
 function updateBuddyTip() {
