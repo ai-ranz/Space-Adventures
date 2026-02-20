@@ -178,6 +178,19 @@ const LOCATION_EMOJIS = {
     shadowBazaar:    ['👽','🛸','🎭','🐙','🦑'],
 };
 
+const LOCATION_NAMES = {
+    havenStation:    ['Haven Station','Home Base','Cozy Port','Safe Harbor','Star Lodge'],
+    dustyRock:       ['Sandy Planet','Desert World','Dusty Dunes','Dry Rock','Sand Globe'],
+    frostHaven:      ['Ice World','Frozen Planet','Snow Globe','Chill Rock','Frost Peak'],
+    vulcanPrime:     ['Volcano World','Fire Planet','Lava Land','Magma Rock','Blaze World'],
+    asteroidBelt:    ['Asteroid Playground','Rock Field','Space Junkyard','Boulder Belt','Tumble Zone'],
+    crystalFields:   ['Crystal Caves','Gem Planet','Sparkle World','Diamond Depths','Prism Rock'],
+    theVoidEdge:     ['The Mystery Zone','Dark Frontier','Shadow Rim','Void Gate','Spook Space'],
+    coreMarket:      ['Big Space Mall','Star Mart','Mega Market','Galaxy Bazaar','Trade Tower'],
+    frontierOutpost: ["Explorer's Hideout",'Scout Station',"Ranger's Post",'Brave Base','Edge Camp'],
+    shadowBazaar:    ['Alien Market','Strange Bazaar','Weird Shop','Creature Corner','Cosmic Flea Market'],
+};
+
 function generateGalaxy() {
     const galaxy = { name: GALAXY_NAMES[Math.floor(Math.random() * GALAXY_NAMES.length)] };
     galaxy.positions = {};
@@ -186,29 +199,64 @@ function generateGalaxy() {
     galaxy.fuelPrices = {};
     galaxy.startingCredits = 800 + Math.floor(Math.random() * 401);
     galaxy.emojis = {};
+    galaxy.names = {};
+    galaxy.dangerLevels = {};
+    galaxy.tradeVariations = {};
 
     for (const [id, base] of Object.entries(BASE_LOCATIONS)) {
-        const pool = LOCATION_EMOJIS[id];
-        if (pool) galaxy.emojis[id] = pool[Math.floor(Math.random() * pool.length)];
-        const jitter = id === 'havenStation' ? 15 : 35;
+        // Random emoji
+        const emojiPool = LOCATION_EMOJIS[id];
+        if (emojiPool) galaxy.emojis[id] = emojiPool[Math.floor(Math.random() * emojiPool.length)];
+
+        // Random name
+        const namePool = LOCATION_NAMES[id];
+        if (namePool) galaxy.names[id] = namePool[Math.floor(Math.random() * namePool.length)];
+
+        // Position jitter (bigger for more variation)
+        const jitter = id === 'havenStation' ? 20 : 60;
         galaxy.positions[id] = {
-            x: Math.max(40, Math.min(760, base.x + Math.round((Math.random() - 0.5) * 2 * jitter))),
-            y: Math.max(40, Math.min(460, base.y + Math.round((Math.random() - 0.5) * 2 * jitter))),
+            x: Math.max(50, Math.min(750, base.x + Math.round((Math.random() - 0.5) * 2 * jitter))),
+            y: Math.max(50, Math.min(450, base.y + Math.round((Math.random() - 0.5) * 2 * jitter))),
         };
+
+        // Resource weight variation (wider range)
         if (base.resources && base.resources.length > 0) {
             galaxy.resourceWeights[id] = base.resources.map(r => ({
                 id: r.id,
-                weight: Math.max(5, Math.round(r.weight * (0.75 + Math.random() * 0.5)))
+                weight: Math.max(5, Math.round(r.weight * (0.6 + Math.random() * 0.8)))
             }));
         }
+
+        // Price modifier variation
         if (base.priceModifiers && Object.keys(base.priceModifiers).length > 0) {
             galaxy.priceModifiers[id] = {};
             for (const [resId, mod] of Object.entries(base.priceModifiers)) {
-                galaxy.priceModifiers[id][resId] = +(mod * (0.9 + Math.random() * 0.2)).toFixed(2);
+                galaxy.priceModifiers[id][resId] = +(mod * (0.85 + Math.random() * 0.3)).toFixed(2);
             }
         }
+
+        // Fuel price variation
         if (base.fuelPrice > 0) {
-            galaxy.fuelPrices[id] = Math.max(1, base.fuelPrice + Math.round((Math.random() - 0.5) * 2));
+            galaxy.fuelPrices[id] = Math.max(1, base.fuelPrice + Math.round((Math.random() - 0.5) * 3));
+        }
+
+        // Danger level variation for planets (±1, 30% chance)
+        if (base.dangerLevel > 0) {
+            const shift = Math.random() < 0.3 ? (Math.random() < 0.5 ? -1 : 1) : 0;
+            galaxy.dangerLevels[id] = Math.max(1, Math.min(5, base.dangerLevel + shift));
+        }
+
+        // Trade resource variation — 40% chance to swap one resource
+        if (base.tradeResources && base.tradeResources.length > 2) {
+            const allRes = Object.keys(RESOURCES);
+            const trades = [...base.tradeResources];
+            if (Math.random() < 0.4) {
+                const removeIdx = Math.floor(Math.random() * trades.length);
+                trades.splice(removeIdx, 1);
+                const available = allRes.filter(r => !trades.includes(r));
+                if (available.length > 0) trades.push(available[Math.floor(Math.random() * available.length)]);
+            }
+            galaxy.tradeVariations[id] = trades;
         }
     }
     return galaxy;
@@ -217,9 +265,8 @@ function generateGalaxy() {
 function applyGalaxy(galaxy) {
     if (!galaxy) return;
     for (const [id, loc] of Object.entries(LOCATIONS)) {
-        if (galaxy.emojis && galaxy.emojis[id]) {
-            loc.emoji = galaxy.emojis[id];
-        }
+        if (galaxy.names && galaxy.names[id]) loc.name = galaxy.names[id];
+        if (galaxy.emojis && galaxy.emojis[id]) loc.emoji = galaxy.emojis[id];
         if (galaxy.positions && galaxy.positions[id]) {
             loc.x = galaxy.positions[id].x;
             loc.y = galaxy.positions[id].y;
@@ -233,18 +280,27 @@ function applyGalaxy(galaxy) {
         if (galaxy.fuelPrices && galaxy.fuelPrices[id] !== undefined) {
             loc.fuelPrice = galaxy.fuelPrices[id];
         }
+        if (galaxy.dangerLevels && galaxy.dangerLevels[id] !== undefined) {
+            loc.dangerLevel = galaxy.dangerLevels[id];
+        }
+        if (galaxy.tradeVariations && galaxy.tradeVariations[id]) {
+            loc.tradeResources = [...galaxy.tradeVariations[id]];
+        }
     }
 }
 
 function resetLocations() {
     for (const [id, base] of Object.entries(BASE_LOCATIONS)) {
         const loc = LOCATIONS[id];
+        loc.name = base.name;
         loc.emoji = base.emoji;
         loc.x = base.x;
         loc.y = base.y;
         loc.resources = JSON.parse(JSON.stringify(base.resources));
         loc.priceModifiers = { ...base.priceModifiers };
         loc.fuelPrice = base.fuelPrice;
+        loc.dangerLevel = base.dangerLevel;
+        loc.tradeResources = [...base.tradeResources];
     }
 }
 
@@ -413,6 +469,235 @@ function spawnMineParticle(container) {
     setTimeout(() => particle.remove(), 1200);
 }
 
+// ─── RETRO 80s AUDIO SYSTEM ────────────────────────────────
+
+const RetroAudio = (() => {
+    let ctx = null;
+    let musicGain = null;
+    let sfxGain = null;
+    let musicPlaying = false;
+    let musicScheduler = null;
+    let nextNoteTime = 0;
+    let patternIdx = 0;
+    let noteIdx = 0;
+
+    const settings = { musicOn: true, sfxOn: true, musicVol: 0.25, sfxVol: 0.5 };
+
+    // Load persisted settings
+    try {
+        const s = JSON.parse(localStorage.getItem('spaceAdventure_audio'));
+        if (s) Object.assign(settings, s);
+    } catch (e) {}
+
+    function ensureCtx() {
+        if (!ctx) {
+            ctx = new (window.AudioContext || window.webkitAudioContext)();
+            musicGain = ctx.createGain();
+            musicGain.gain.value = settings.musicOn ? settings.musicVol : 0;
+            musicGain.connect(ctx.destination);
+            sfxGain = ctx.createGain();
+            sfxGain.gain.value = settings.sfxOn ? settings.sfxVol : 0;
+            sfxGain.connect(ctx.destination);
+        }
+        if (ctx.state === 'suspended') ctx.resume();
+    }
+
+    function saveSettings() {
+        try { localStorage.setItem('spaceAdventure_audio', JSON.stringify(settings)); } catch (e) {}
+    }
+
+    // ── Music: Chiptune space theme ──
+    const N = {
+        C3:130.81, Eb3:155.56, F3:174.61, G3:196.00, Ab3:207.65, Bb3:233.08,
+        C4:261.63, Eb4:311.13, F4:349.23, G4:392.00, Ab4:415.30, Bb4:466.16,
+        C5:523.25, Eb5:622.25, F5:698.46, G5:783.99, R:0,
+    };
+
+    const BPM = 120;
+    const STEP = 60 / BPM / 2;
+
+    // Each note: [frequency, duration_in_steps]
+    const PATTERNS = [
+        // A: Dreamy ascending arp
+        [[N.C4,2],[N.Eb4,2],[N.G4,2],[N.Bb4,2],[N.C5,2],[N.Bb4,2],[N.G4,2],[N.Eb4,2],
+         [N.F4,2],[N.Ab4,2],[N.C5,2],[N.Eb5,2],[N.C5,2],[N.Ab4,2],[N.F4,2],[N.R,2]],
+        // B: Rhythmic bounce
+        [[N.G3,1],[N.R,1],[N.G4,1],[N.R,1],[N.Bb4,2],[N.G4,2],
+         [N.F3,1],[N.R,1],[N.F4,1],[N.R,1],[N.Ab4,2],[N.F4,2],
+         [N.Eb3,1],[N.R,1],[N.Eb4,1],[N.R,1],[N.G4,2],[N.Eb4,2]],
+        // C: Higher melody
+        [[N.C5,3],[N.Bb4,1],[N.G4,2],[N.Eb4,2],[N.F4,3],[N.Eb4,1],[N.C4,2],[N.R,2],
+         [N.G4,3],[N.F4,1],[N.Eb4,2],[N.C4,2],[N.Eb4,3],[N.R,1],[N.C4,2],[N.R,2]],
+    ];
+
+    function scheduleMusicNote() {
+        if (!musicPlaying || !ctx) return;
+
+        while (nextNoteTime < ctx.currentTime + 0.15) {
+            const pattern = PATTERNS[patternIdx];
+            const [freq, steps] = pattern[noteIdx];
+            const dur = steps * STEP;
+
+            if (freq > 0) {
+                // Lead voice (square wave)
+                const osc = ctx.createOscillator();
+                osc.type = 'square';
+                osc.frequency.value = freq;
+                const env = ctx.createGain();
+                env.gain.setValueAtTime(0, nextNoteTime);
+                env.gain.linearRampToValueAtTime(0.09, nextNoteTime + 0.015);
+                env.gain.setValueAtTime(0.06, nextNoteTime + dur * 0.3);
+                env.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + dur * 0.95);
+                osc.connect(env);
+                env.connect(musicGain);
+                osc.start(nextNoteTime);
+                osc.stop(nextNoteTime + dur);
+
+                // Sub bass (triangle, every 4th note)
+                if (noteIdx % 4 === 0) {
+                    const bass = ctx.createOscillator();
+                    bass.type = 'triangle';
+                    bass.frequency.value = freq / 4;
+                    const benv = ctx.createGain();
+                    benv.gain.setValueAtTime(0.05, nextNoteTime);
+                    benv.gain.exponentialRampToValueAtTime(0.001, nextNoteTime + STEP * 4);
+                    bass.connect(benv);
+                    benv.connect(musicGain);
+                    bass.start(nextNoteTime);
+                    bass.stop(nextNoteTime + STEP * 4);
+                }
+            }
+
+            nextNoteTime += dur;
+            noteIdx++;
+            if (noteIdx >= pattern.length) {
+                noteIdx = 0;
+                patternIdx = (patternIdx + 1) % PATTERNS.length;
+            }
+        }
+
+        musicScheduler = setTimeout(scheduleMusicNote, 80);
+    }
+
+    function startMusic() {
+        if (musicPlaying || !settings.musicOn) return;
+        ensureCtx();
+        musicPlaying = true;
+        nextNoteTime = ctx.currentTime + 0.1;
+        noteIdx = 0;
+        scheduleMusicNote();
+    }
+
+    function stopMusic() {
+        musicPlaying = false;
+        if (musicScheduler) { clearTimeout(musicScheduler); musicScheduler = null; }
+    }
+
+    // ── SFX helpers ──
+    function playTone(freq, dur, type, vol) {
+        if (!settings.sfxOn || !ctx) return;
+        const osc = ctx.createOscillator();
+        osc.type = type || 'square';
+        osc.frequency.value = freq;
+        const env = ctx.createGain();
+        env.gain.setValueAtTime(vol || 0.12, ctx.currentTime);
+        env.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + dur);
+        osc.connect(env);
+        env.connect(sfxGain);
+        osc.start();
+        osc.stop(ctx.currentTime + dur + 0.01);
+    }
+
+    function playSeq(notes, spacing, type, vol) {
+        if (!settings.sfxOn) return;
+        ensureCtx();
+        const t = ctx.currentTime;
+        notes.forEach((f, i) => {
+            if (f <= 0) return;
+            const osc = ctx.createOscillator();
+            osc.type = type || 'square';
+            osc.frequency.value = f;
+            const env = ctx.createGain();
+            env.gain.setValueAtTime(vol || 0.1, t + i * spacing);
+            env.gain.exponentialRampToValueAtTime(0.001, t + i * spacing + spacing * 1.8);
+            osc.connect(env);
+            env.connect(sfxGain);
+            osc.start(t + i * spacing);
+            osc.stop(t + i * spacing + spacing * 2);
+        });
+    }
+
+    // ── SFX library ──
+    function sfx(type) {
+        if (!settings.sfxOn) return;
+        ensureCtx();
+        switch (type) {
+            case 'click': playTone(800, 0.04, 'square', 0.06); break;
+            case 'mine-tap': playTone(200 + Math.random() * 400, 0.06, 'square', 0.08); break;
+            case 'mine-find': playSeq([440, 554, 659], 0.08, 'square', 0.1); break;
+            case 'rare': playSeq([659, 784, 988, 1175], 0.07, 'square', 0.12); break;
+            case 'legendary': playSeq([523, 659, 784, 1047, 1319, 1568], 0.09, 'square', 0.14); break;
+            case 'sell': playSeq([1200, 1600], 0.06, 'square', 0.08); break;
+            case 'sell-all': playSeq([800, 1000, 1200, 1600], 0.06, 'square', 0.1); break;
+            case 'buy': playTone(600, 0.12, 'triangle', 0.1); break;
+            case 'travel': {
+                const osc = ctx.createOscillator();
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(100, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.4);
+                const env = ctx.createGain();
+                env.gain.setValueAtTime(0.08, ctx.currentTime);
+                env.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
+                osc.connect(env); env.connect(sfxGain);
+                osc.start(); osc.stop(ctx.currentTime + 0.55);
+                break;
+            }
+            case 'upgrade': playSeq([523, 659, 784, 1047], 0.1, 'square', 0.1); break;
+            case 'achievement': playSeq([523, 659, 784, 1047, 784, 1047, 1319], 0.1, 'square', 0.12); break;
+            case 'refuel': {
+                const osc = ctx.createOscillator();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, ctx.currentTime);
+                osc.frequency.linearRampToValueAtTime(600, ctx.currentTime + 0.25);
+                const env = ctx.createGain();
+                env.gain.setValueAtTime(0.1, ctx.currentTime);
+                env.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+                osc.connect(env); env.connect(sfxGain);
+                osc.start(); osc.stop(ctx.currentTime + 0.35);
+                break;
+            }
+            case 'error': playSeq([200, 150], 0.1, 'square', 0.1); break;
+            case 'newgame': playSeq([262, 330, 392, 523, 659, 784], 0.12, 'square', 0.1); break;
+        }
+    }
+
+    // ── Settings API ──
+    function setMusicOn(on) {
+        settings.musicOn = on;
+        if (on) { if (musicGain) musicGain.gain.value = settings.musicVol; startMusic(); }
+        else { stopMusic(); if (musicGain) musicGain.gain.value = 0; }
+        saveSettings();
+    }
+    function setSfxOn(on) {
+        settings.sfxOn = on;
+        if (sfxGain) sfxGain.gain.value = on ? settings.sfxVol : 0;
+        saveSettings();
+    }
+    function setMusicVol(v) {
+        settings.musicVol = v;
+        if (musicGain && settings.musicOn) musicGain.gain.value = v;
+        saveSettings();
+    }
+    function setSfxVol(v) {
+        settings.sfxVol = v;
+        if (sfxGain && settings.sfxOn) sfxGain.gain.value = v;
+        saveSettings();
+    }
+
+    return { startMusic, stopMusic, sfx, ensureCtx, setMusicOn, setSfxOn, setMusicVol, setSfxVol,
+             get settings() { return { ...settings }; } };
+})();
+
 // ─── GAME STATE ────────────────────────────────────────────
 
 let game = null;
@@ -484,6 +769,7 @@ function checkAchievements() {
 }
 
 function showAchievement(ach) {
+    RetroAudio.sfx('achievement');
     spawnConfetti();
     const el = document.createElement('div');
     el.className = 'achievement-popup';
@@ -558,6 +844,7 @@ function travel(locationId) {
     }
 
     const fromId = game.currentLocation;
+    RetroAudio.sfx('travel');
 
     showTravelAnimation(fromId, locationId, () => {
         game.fuel -= cost;
@@ -590,10 +877,11 @@ function generatePrices(locationId) {
     for (const resId of loc.tradeResources) {
         const res = RESOURCES[resId];
         const mod = loc.priceModifiers[resId] || 1.0;
-        currentPrices[resId] = {
-            sell: Math.max(1, Math.round(res.basePrice * mod * (0.88 + Math.random() * 0.24))),
-            buy: Math.max(1, Math.round(res.basePrice * 1.35 * (2 - mod) * (0.88 + Math.random() * 0.24))),
-        };
+        let sell = Math.max(1, Math.round(res.basePrice * mod * (0.88 + Math.random() * 0.24)));
+        let buy = Math.max(1, Math.round(res.basePrice * 1.35 * (2 - mod) * (0.88 + Math.random() * 0.24)));
+        // Prevent infinite money: buy must always cost more than sell pays
+        if (buy <= sell) buy = Math.round(sell * (1.15 + Math.random() * 0.15));
+        currentPrices[resId] = { sell, buy };
     }
 }
 
@@ -603,6 +891,7 @@ function sellResource(resId, qty) {
     if (amount <= 0) return;
     const revenue = amount * currentPrices[resId].sell;
     game.cargo[resId] -= amount;
+    RetroAudio.sfx('sell');
     if (game.cargo[resId] <= 0) delete game.cargo[resId];
     game.credits += revenue;
     game.stats.totalSold += amount;
@@ -617,6 +906,7 @@ function sellResource(resId, qty) {
 function sellAllCargo() {
     const loc = LOCATIONS[game.currentLocation];
     if (!loc.canTrade) return;
+    RetroAudio.sfx('sell-all');
     let totalRevenue = 0, totalItems = 0;
     for (const [resId, qty] of Object.entries(game.cargo)) {
         if (qty <= 0) continue;
@@ -650,6 +940,7 @@ function buyResource(resId, qty) {
     game.cargo[resId] = (game.cargo[resId] || 0) + amount;
     game.credits -= cost;
     game.stats.totalBought += amount;
+    RetroAudio.sfx('buy');
     game.stats.creditsSpent += cost;
     addLog('🛒 Bought ' + amount + 'x ' + RESOURCES[resId].symbol + ' ' + RESOURCES[resId].name + ' for ' + formatCR(cost), 'trade');
     updateAll();
@@ -669,6 +960,7 @@ function refuel(amount) {
     game.fuel += actual;
     game.credits -= cost;
     game.stats.creditsSpent += cost;
+    RetroAudio.sfx('refuel');
     addLog('⛽ +' + actual + ' fuel for ' + formatCR(cost) + '!', 'trade');
     showToast('⛽ +' + actual + ' fuel!', 'success');
     updateAll();
@@ -683,6 +975,7 @@ function purchaseUpgrade(upgradeId) {
     game.credits -= nextLevel.cost;
     game.stats.creditsSpent += nextLevel.cost;
     game.upgrades[upgradeId] = current + 1;
+    RetroAudio.sfx('upgrade');
     addLog('⬆️ ' + UPGRADES[upgradeId].name + ' → Level ' + (current + 1) + '! 🎉', 'upgrade');
     showToast('⬆️ ' + UPGRADES[upgradeId].name + ' Lv' + (current + 1) + '!', 'success');
     spawnConfetti();
@@ -726,6 +1019,7 @@ function startMining() {
 
 function onMineClick() {
     if (!isMining || !mineClicksEnabled) return;
+    RetroAudio.sfx('mine-tap');
     miningProgress = Math.min(100, miningProgress + 3 + Math.random() * 4);
     const container = document.getElementById('mine-particles');
     spawnMineParticle(container);
@@ -784,6 +1078,8 @@ function completeMining() {
 
     if (res.rarity === 'rare') game.foundRare = true;
     if (res.rarity === 'legendary') game.foundLegendary = true;
+
+    RetroAudio.sfx(res.rarity === 'legendary' ? 'legendary' : res.rarity === 'rare' ? 'rare' : 'mine-find');
 
     const tag = res.rarity === 'legendary' ? '🦄🦄🦄 LEGENDARY!!! ' :
                 res.rarity === 'rare' ? '💎💎 RARE!! ' :
@@ -905,6 +1201,7 @@ function toggleLog() {
 // ─── TOAST ─────────────────────────────────────────────────
 
 function showToast(message, type) {
+    if (type === 'error') RetroAudio.sfx('error');
     const existing = document.querySelector('.toast');
     if (existing) existing.remove();
     const el = document.createElement('div');
@@ -925,6 +1222,7 @@ function updateAll() {
     else if (panel === 'trading') renderTrading();
     else if (panel === 'upgrades') renderUpgrades();
     else if (panel === 'ship') renderShip();
+    else if (panel === 'settings') renderSettings();
 }
 
 function updateStatusBar() {
@@ -945,6 +1243,7 @@ function updateBuddyTip() {
 }
 
 function showPanel(panelId) {
+    RetroAudio.sfx('click');
     game.activePanel = panelId;
     document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
     document.getElementById('panel-' + panelId).classList.add('active');
@@ -1417,6 +1716,59 @@ function renderShip() {
         '<div class="ship-actions"><button class="btn btn-primary" onclick="returnToMenu()">🔙 Main Menu</button></div></div>';
 }
 
+// ═══════════════════════════════════════════════════════════
+// SETTINGS PANEL
+// ═══════════════════════════════════════════════════════════
+
+function renderSettings() {
+    const panel = document.getElementById('panel-settings');
+    const s = RetroAudio.settings;
+
+    panel.innerHTML =
+        '<div class="settings-panel">' +
+            '<h2>⚙️ Settings</h2>' +
+            '<div class="settings-section">' +
+                '<h3>🎵 Music</h3>' +
+                '<div class="settings-row">' +
+                    '<label class="toggle-label">' +
+                        '<input type="checkbox" class="toggle-input" ' + (s.musicOn ? 'checked' : '') +
+                            ' onchange="RetroAudio.setMusicOn(this.checked)">' +
+                        '<span class="toggle-switch"></span>' +
+                        '<span>' + (s.musicOn ? 'ON' : 'OFF') + '</span>' +
+                    '</label>' +
+                '</div>' +
+                '<div class="settings-row">' +
+                    '<span class="vol-label">Volume</span>' +
+                    '<input type="range" min="0" max="100" value="' + Math.round(s.musicVol * 100) +
+                        '" class="vol-slider" oninput="RetroAudio.setMusicVol(this.value/100)">' +
+                '</div>' +
+            '</div>' +
+            '<div class="settings-section">' +
+                '<h3>🔊 Sound Effects</h3>' +
+                '<div class="settings-row">' +
+                    '<label class="toggle-label">' +
+                        '<input type="checkbox" class="toggle-input" ' + (s.sfxOn ? 'checked' : '') +
+                            ' onchange="RetroAudio.setSfxOn(this.checked)">' +
+                        '<span class="toggle-switch"></span>' +
+                        '<span>' + (s.sfxOn ? 'ON' : 'OFF') + '</span>' +
+                    '</label>' +
+                '</div>' +
+                '<div class="settings-row">' +
+                    '<span class="vol-label">Volume</span>' +
+                    '<input type="range" min="0" max="100" value="' + Math.round(s.sfxVol * 100) +
+                        '" class="vol-slider" oninput="RetroAudio.setSfxVol(this.value/100)">' +
+                '</div>' +
+                '<div class="settings-row">' +
+                    '<button class="btn btn-primary" onclick="RetroAudio.sfx(\'click\')">🔊 Test Sound</button>' +
+                '</div>' +
+            '</div>' +
+            '<div class="settings-section settings-info">' +
+                '<p>🎶 Retro 80s chiptune music!</p>' +
+                '<p>🔈 All sounds are generated — no downloads needed.</p>' +
+            '</div>' +
+        '</div>';
+}
+
 // ── Cargo Summary ──
 
 function renderCargoSummary() {
@@ -1502,6 +1854,7 @@ function deleteSlot(n) {
 function returnToMenu() {
     saveGame();
     cancelMining();
+    RetroAudio.stopMusic();
     activeSlot = 0;
     game = null;
     currentPrices = {};
@@ -1565,6 +1918,8 @@ function loadAndPlay(n) {
         document.getElementById('intro-overlay').classList.add('hidden');
         const loc = LOCATIONS[game.currentLocation];
         if (loc.canTrade) generatePrices(game.currentLocation);
+        RetroAudio.ensureCtx();
+        RetroAudio.startMusic();
         updateAll();
         renderEventLog();
     }
@@ -1586,6 +1941,9 @@ function newGameInSlot(n) {
     addLog('💡 Click Sandy Planet on the map and fly there!', 'travel');
 
     document.getElementById('intro-overlay').classList.add('hidden');
+    RetroAudio.ensureCtx();
+    RetroAudio.startMusic();
+    RetroAudio.sfx('newgame');
     updateAll();
     renderEventLog();
     saveGame();
