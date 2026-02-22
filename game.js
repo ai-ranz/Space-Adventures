@@ -427,8 +427,8 @@ const MEGA_BOSS = {
     emoji: '💀👑',
     phaseEmojis: ['💀👑', '👹🔥', '☠️💜'],
     phaseNames: ['Soul Awakening', 'Burning Rage', 'Final Desperation'],
-    hp: 500,
-    attack: 30,
+    hp: 300,
+    attack: 18,
     reward: 25000,
     desc: 'An abomination born from the combined souls of every defeated boss!',
 };
@@ -1405,7 +1405,7 @@ function enemyTurn() {
                 cs.log.push('💀💀💀 FINAL FORM UNLEASHED! 💀💀💀');
                 if (!cs.healUsed) {
                     cs.healUsed = true;
-                    const heal = Math.round(cs.enemyMaxHp * 0.15);
+                    const heal = Math.round(cs.enemyMaxHp * 0.08);
                     cs.enemyHp = Math.min(cs.enemyMaxHp, cs.enemyHp + heal);
                     cs.log.push('💚 Absorbs defeated souls... +' + heal + ' HP!');
                 }
@@ -1442,7 +1442,7 @@ function megaBossDoAttack() {
     const enemy = cs.enemy;
 
     // Phase-scaled damage
-    const phaseMult = cs.phase === 3 ? 1.7 : cs.phase === 2 ? 1.35 : 1.0;
+    const phaseMult = cs.phase === 3 ? 1.35 : cs.phase === 2 ? 1.15 : 1.0;
     const baseDmg = Math.round(cs.baseAttack * phaseMult);
     const damage = baseDmg + Math.floor(Math.random() * baseDmg * 0.4);
     cs.playerShield = Math.max(0, cs.playerShield - damage);
@@ -1457,18 +1457,18 @@ function megaBossDoAttack() {
 
     // Double strike chance in phases 2 and 3
     if (cs.phase >= 2 && cs.playerShield > 0) {
-        const doubleChance = cs.phase === 3 ? 0.40 : 0.25;
+        const doubleChance = cs.phase === 3 ? 0.20 : 0.15;
         if (Math.random() < doubleChance) {
-            const bonusDmg = Math.round(baseDmg * 0.6) + Math.floor(Math.random() * baseDmg * 0.3);
+            const bonusDmg = Math.round(baseDmg * 0.5) + Math.floor(Math.random() * baseDmg * 0.2);
             cs.playerShield = Math.max(0, cs.playerShield - bonusDmg);
             cs.log.push('⚡ DOUBLE STRIKE! +' + bonusDmg + ' damage!');
             RetroAudio.sfx('player-hit');
         }
     }
 
-    // Phase 3: chance to drain shields and heal
-    if (cs.phase === 3 && cs.playerShield > 0 && Math.random() < 0.2) {
-        const drainAmt = Math.round(damage * 0.3);
+    // Phase 3: small chance to drain shields and heal
+    if (cs.phase === 3 && cs.playerShield > 0 && Math.random() < 0.10) {
+        const drainAmt = Math.round(damage * 0.15);
         cs.enemyHp = Math.min(cs.enemyMaxHp, cs.enemyHp + drainAmt);
         cs.log.push('💜 Soul Drain! Heals ' + drainAmt + ' HP!');
     }
